@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
 import Swiper from 'react-native-swiper';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
