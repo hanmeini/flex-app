@@ -3,7 +3,6 @@ import React from 'react'
 import { Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'; // Pastikan Ionicons diimpor
 import { SearchBar } from '@rneui/themed'; 
-import { Input } from '@rneui/base';
 
 const Home = () => {
   return (
