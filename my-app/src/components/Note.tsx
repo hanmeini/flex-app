@@ -3,9 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react'
 
 
-//untuk membuat fitur utama menambah catatan judu,deskripsi,jam setelah centang baru muncul di Todocard
-
-
 const Note = () => {
   return (
     <View style={styles.container}>
