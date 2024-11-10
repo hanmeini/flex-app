@@ -1,18 +1,18 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ProgressBar } from 'react-native-paper';
 import { SearchBar } from '@rneui/themed'; 
 import TodoCard from './TodoCard'; // Import komponen TodoCard
+import { FIREBASE_AUTH } from '../../FirebaseConfig';
 
 const HomeScreen = () => {
   // Data dummy card
   const dataDummy = [
     { id: 1, title: 'Tugas bahasa Indonesia', time: '08.00 - 24.00', description: 'segera kerjakan', date: '2024-11-08' },
-    { id: 2, title: 'Tugas matematika', time: '08.00 - 24.00', description: 'persiapan ujian', date: '2024-11-08' },
+    { id: 2, title: 'Tugas matematika', time: '08.00 - 24.00', description: 'persiapan ujian', date: '2024-11-10' },
     { id: 3, title: 'Tugas sejarah', time: '10.00 - 14.00', description: 'baca bab 3', date: '2024-11-08' },
     { id: 4, title: 'Tugas fisika', time: '13.00 - 15.00', description: 'eksperimen', date: '2024-11-01' },
-    { id: 5, title: 'Tugas kimia', time: '16.00 - 18.00', description: 'periksa laporan', date: '2024-11-01' },
     { id: 5, title: 'Tugas kimia', time: '16.00 - 18.00', description: 'periksa laporan', date: '2024-11-01' },
   ];
 
@@ -27,10 +27,29 @@ const HomeScreen = () => {
     alert('Settings clicked');
   };
 
+  //Profile
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = FIREBASE_AUTH.onAuthStateChanged((currentUser) => {
+      if (currentUser) {
+        setUser({
+          email: currentUser.email,
+          displayName: currentUser.displayName || 'User',
+          photoURL: currentUser.photoURL || 'url_default_gambar'
+        });
+      } else {
+        setUser(null);
+      }
+    });
+    
+    // Bersihkan listener ketika komponen di-unmount
+    return unsubscribe;
+  }, []);
   return (
     <View style={styles.container}>
       {/* Header */}
-      <HeaderSection />
+      <HeaderSection user={user} />
 
       <ScrollView>
         {/* Progress Section */}
@@ -47,13 +66,16 @@ const HomeScreen = () => {
 };
 
 // Komponen Header
-const HeaderSection = () => (
+const HeaderSection = ({ user }:any) => (
   <View style={styles.section}>
     <View style={styles.headerContainer}>
-      <Image source={require('../../assets/images/WhatsApp Image 2024-09-02 at 11.13.35.jpeg')} style={styles.profileImage} />
+      <Image
+        source={user && user.photoURL ? { uri: user.photoURL } : require('../../assets/images/WhatsApp Image 2024-09-02 at 11.13.35.jpeg')}
+        style={styles.profileImage}
+      />
       <View style={styles.headerTextContainer}>
-        <Text style={styles.headerText}>Hello, Erland!</Text>
-        <Text style={styles.subHeaderText}>View Account</Text>
+        <Text style={styles.headerText}>Hello, {user ? user.displayName : 'User'}!</Text>
+        <Text style={styles.subHeaderText}>{user ? user.email : 'View Account'}</Text>
       </View>
       <TouchableOpacity style={styles.notificationButton}>
         <Ionicons name="notifications-outline" size={25} />
@@ -83,7 +105,7 @@ const ProgressSection = () => (
 );
 
 // Komponen Daftar Tugas
-const TaskListSection = ({ tasks, onSettingsPress }) => (
+const TaskListSection = ({ tasks, onSettingsPress }:any) => (
   <View style={styles.taskListContainer}>
     <Text style={styles.taskListHeader}>Tugas Hari Ini</Text>
     {tasks.length > 0 ? (
@@ -147,7 +169,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     marginTop: 10,
-    borderRadius:30,
+    borderRadius: 30,
   },
   progress: {
     paddingHorizontal: 20,

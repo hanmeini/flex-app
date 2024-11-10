@@ -16,7 +16,7 @@ const data = [
   },
 ];
 
-function OnboardingScreen({ navigation })  {
+function OnboardingScreen({ navigation }:any)  {
 
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -27,10 +27,10 @@ function OnboardingScreen({ navigation })  {
   
     const handleGetStarted = () => {
       // Navigasi ke layar utama aplikasi atau layar berikutnya
-      navigation.navigate('AppNavigator');
+      navigation.navigate('Login');
     };
 
-    const handleIndexChanged = (index) => {
+    const handleIndexChanged = (index: any) => {
       setCurrentIndex(index);
     };
   
@@ -53,11 +53,6 @@ function OnboardingScreen({ navigation })  {
           {/* Tampilkan tombol "Get Started" dan teks "Skip" hanya di gambar terakhir */}
           {index === data.length - 1 && (
             <View style={styles.footer}>
-              {/* Tombol Skip */}
-              <TouchableOpacity onPress={handleSkip}>
-                <Text style={styles.skipText}>Later</Text>
-              </TouchableOpacity>
-
               {/* Tombol Get Started */}
               <TouchableOpacity 
                 style={styles.getStartedButton} 

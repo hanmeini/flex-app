@@ -1,5 +1,5 @@
 import React from 'react';
-import AppNavigator from './AppNavigator'; // Pastikan path sudah sesuai
+import AppNavigator from './AppNavigator';
 import "./global.css"
 
 export default function App() {

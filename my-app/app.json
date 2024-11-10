@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "Flexido",
+    "slug": "Flexido",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/flexido.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/images/splashscreen.png",

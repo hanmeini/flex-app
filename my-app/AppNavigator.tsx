@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, useNavigationState } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+
 import HomeScreen from './src/components/Home';
 import TaskScreen from './src/components/Task';
 import CalendarScreen from './src/components/Calendar';
 import ProfileScreen from './src/components/Profile';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { Ionicons } from '@expo/vector-icons';
 import OnboardingScreen from './src/screen/OnBoarding';
-import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import Note from './src/components/Note';
+import LoginScreen from './src/screen/LoginScreen';
+import RegisterScreen from './src/screen/RegisterScreen';
+import Task from './src/components/Task';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -20,8 +25,8 @@ function TabNavigator() {
     return (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} // Adjust offset for iOS
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Use 'padding' for iOS and 'height' for Android
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <Tab.Navigator
                 initialRouteName="Home"
@@ -30,10 +35,6 @@ function TabNavigator() {
                     tabBarStyle: { backgroundColor: '#1A2529' },
                     tabBarInactiveTintColor: 'gray',
                     headerShown: false,
-                    headerTitle: 'Flexido',
-                    headerStyle: { backgroundColor: '#1A2529', height: 90 },
-                    headerTintColor: '#fff',
-                    headerTitleStyle: { marginBottom: 10, fontFamily: 'figtree', fontWeight: 'bold' }
                 }}
             >
                 <Tab.Screen
@@ -75,22 +76,22 @@ function TabNavigator() {
                 <Tab.Screen
                     name="Note"
                     component={Note}
-                        options={{
-                            tabBarButton: () => null, // This hides the tab bar button for Note
-                        }}
-                    />
+                    options={{
+                        tabBarButton: () => null,
+                    }}
+                />
             </Tab.Navigator>
         </KeyboardAvoidingView>
     );
 }
 
-function CustomDrawerContent(props) {
+function CustomDrawerContent(props:any) {
     const activeRoute = useNavigationState(state => {
         const tabState = state.routes.find(route => route.name === "Flexido")?.state;
         return tabState ? tabState.routes[tabState.index].name : "";
     });
 
-    const getDrawerItemStyle = (routeName) => {
+    const getDrawerItemStyle = (routeName:any) => {
         return activeRoute === routeName ? styles.activeBackground : null;
     };
 
@@ -145,12 +146,30 @@ function DrawerNavigator() {
 }
 
 function AppNavigator() {
+    const [isLoggedIn, setIsLoggedIn] = useState(null);
+
+    useEffect(() => {
+        const checkLoginStatus = async () => {
+            const loggedInStatus = await AsyncStorage.getItem('isLoggedIn');
+            setIsLoggedIn(loggedInStatus === 'true');
+        };
+        checkLoginStatus();
+    }, []);
+
+    if (isLoggedIn === null) return null; // Wait until login status is checked
+
     return (
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-                <Stack.Screen name="AppNavigator" component={DrawerNavigator} />
-                <Stack.Screen name="Note" component={Note}/>
+                {isLoggedIn ? (
+                    <Stack.Screen name="Flexido" component={DrawerNavigator} />
+                ) : (
+                    <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+                )}
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Register" component={RegisterScreen} />
+                <Stack.Screen name="Note" component={Note} />
+                <Stack.Screen name="Task" component={Task} />
             </Stack.Navigator>
         </NavigationContainer>
     );
@@ -163,15 +182,15 @@ const styles = StyleSheet.create({
         marginVertical: 5,
     },
     activeBackground: {
-        backgroundColor: '#F4AB05', // Active background color
+        backgroundColor: '#F4AB05',
         borderRadius: 10,
     },
     drawerLabel: {
-        color: '#000', // Default label color
+        color: '#000',
         fontSize: 16,
     },
     activeLabel: {
-        fontWeight: 'bold', // Active label style
-        color: '#F4AB05', // Active label color
+        fontWeight: 'bold',
+        color: '#F4AB05',
     },
 });

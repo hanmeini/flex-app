@@ -18,7 +18,7 @@ const CustomCalendar = () => {
         setDatePickerVisibility(false);
     };
 
-    const handleConfirm = (date) => {
+    const handleConfirm = (date:any) => {
         setSelectedDate(date);
         hideDatePicker();
     };

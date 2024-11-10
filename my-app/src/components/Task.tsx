@@ -1,68 +1,54 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Keyboard, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Pastikan Ionicons diimpor
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { getFirestore, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { FIREBASE_APP } from '../../FirebaseConfig';
 
-const Task = ({navigation}) => {
-  const [task, setTask] = useState('');
-  const [taskList, setTaskList] = useState([]);
-  const [showInput, setShowInput] = useState(false); // Mengatur apakah input ditampilkan atau tidak
-  const inputRef = useRef(null); // Menggunakan ref untuk memfokuskan input
+const Task = ({ navigation }: any) => {
+  const [notes, setNotes] = useState<any[]>([]);
 
-  // Fungsi untuk menambahkan task ke list
-  const addTask = () => {
-    if (task) {
-      setTaskList([...taskList, { id: Math.random().toString(), value: task }]);
-      setTask(''); // Mengosongkan input setelah menambahkan task
-      setShowInput(false); // Sembunyikan input setelah task ditambahkan
-      Keyboard.dismiss(); // Menyembunyikan keyboard setelah task ditambahkan
-    }
-  };
+  // Fetch notes from Firestore
+  useEffect(() => {
+    const db = getFirestore(FIREBASE_APP);
+    const notesCollection = collection(db, 'notes');
+    const q = query(notesCollection, orderBy('createdAt', 'desc')); // Sort by creation date
 
-  // Fungsi untuk memfokuskan input dan menampilkan keyboard saat tombol + ditekan
-  const focusInput = () => {
-    navigation.navigate('Note');
-  };
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newNotes = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setNotes(newNotes); // Set notes data to state
+    });
 
-  // Fungsi untuk menghapus task dari list
-  const removeTask = (taskId) => {
-    setTaskList(taskList.filter((task) => task.id !== taskId));
-  };
+    return () => unsubscribe(); // Clean up listener on unmount
+  }, []);
 
   return (
     <View style={styles.container}>
-      {/* Daftar task */}
-      <FlatList
-        data={taskList}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.taskContainer}>
-            <Text style={styles.taskText}>{item.value}</Text>
-            <TouchableOpacity onPress={() => removeTask(item.id)}>
-              <Text style={styles.deleteButton}>X</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {notes.map((note) => (
+          <View key={note.id} style={styles.card}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="calendar" size={30} color="#fff" />
+            </View>
+            <View style={styles.contentContainer}>
+              <Text style={styles.title}>{note.title}</Text>
+              <Text style={styles.time}>{note.time}</Text>
+              {note.description && <Text style={styles.description}>{note.description}</Text>}
+            </View>
+            <TouchableOpacity onPress={() => console.log("Settings pressed")} style={styles.settingsIcon}>
+              <Ionicons name="settings-outline" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
-        )}
-        ListEmptyComponent={<Text style={styles.noTaskText}>No tasks available</Text>}
-      />
+        ))}
+      </ScrollView>
 
-      {/* Input task di bagian bawah, hanya muncul setelah to mbol tambah ditekan */}
-      {showInput && (
-        <View style={styles.inputContainer}>
-          <TextInput
-            ref={inputRef} // Menyambungkan ref ke TextInput
-            style={styles.input}
-            placeholder="Add a new task"
-            value={task}
-            onChangeText={setTask}
-            onSubmitEditing={addTask} // Menambah task ketika tombol "Enter" ditekan
-          />
-        </View>
-      )}
-
-      {/* Tombol tambah task di kanan bawah */}
-      <TouchableOpacity style={styles.floatingButton} onPress={() => 
-        navigation.navigate('Note')
-      }>
+      {/* Floating Add Button */}
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => navigation.navigate('Note')}
+      >
         <Ionicons name="add-outline" size={28} color="#fff" />
       </TouchableOpacity>
     </View>
@@ -74,53 +60,55 @@ export default Task;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#fff',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    marginTop: 20,
+  scrollContainer: {
+    padding: 20,
+    paddingBottom: 100, // Add some padding to the bottom for space
   },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    fontSize: 18,
-    backgroundColor: '#f9f9f9',
-  },
-  taskContainer: {
+  card: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    backgroundColor: '#1A2529',
+    padding: 15,
+    borderRadius: 20,
     marginBottom: 10,
-    backgroundColor: '#f9f9f9',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  taskText: {
-    fontSize: 18,
+  iconContainer: {
+    backgroundColor: '#F4AB05',
+    borderRadius: 10,
+    padding: 10,
   },
-  deleteButton: {
-    color: '#dc3545',
-    fontSize: 18,
+  contentContainer: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  noTaskText: {
-    textAlign: 'center',
-    color: 'gray',
-    marginTop: 20,
-    fontSize: 18,
+  time: {
+    color: '#bbb',
+    fontSize: 14,
+  },
+  description: {
+    color: '#bbb',
+    fontSize: 12,
+  },
+  settingsIcon: {
+    backgroundColor: '#333',
+    padding: 8,
+    borderRadius: 15,
   },
   floatingButton: {
     position: 'absolute',
-    bottom: 50,
+    bottom: 20,
     right: 20,
-    backgroundColor: '#F4AB05', // Warna tombol sesuai tema Flexido
+    backgroundColor: '#F4AB05', // Color button theme
     borderRadius: 15,
     padding: 17,
-    elevation: 5, // Menambah bayangan pada tombol
+    elevation: 5, // Add shadow for floating effect
   },
 });

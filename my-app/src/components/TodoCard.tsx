@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 
-const ToDoCard = ({ title, time, description, onSettingsPress }) => {
+const ToDoCard = ({ title, time, description, onSettingsPress }:any) => {
     return (
         <View style={styles.card}>
             <View style={styles.iconContainer}>
