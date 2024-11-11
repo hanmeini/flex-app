@@ -27,7 +27,7 @@ const Note = ({navigation}:any) => {
     const limitedDescription = description.split(' ').slice(0, 2).join(' ');
     const newNote = {
       title,
-      description: limitedDescription,
+      description,
       time: reminderTime || 'No time set',
     };
 

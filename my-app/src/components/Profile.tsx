@@ -6,9 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SearchBar } from '@rneui/themed'; 
 
-const Profile = () => {
+const Profile = ({navigation}:any) => {
   const [selectedDay, setSelectedDay] = useState("Hari Ini");
-  const navigation = useNavigation();
 
   return (
     <ScrollView style={styles.container}>
@@ -20,7 +19,7 @@ const Profile = () => {
           <Text style={styles.namaText}>Mikael Kelvian</Text>
       </View>
       <View>
-        <TouchableOpacity style={styles.buttonText} onPress={() => navigation.navigate('Login')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
           <Text>masuk</Text>
         </TouchableOpacity>
       </View>

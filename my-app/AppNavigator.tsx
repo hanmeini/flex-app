@@ -125,6 +125,12 @@ function CustomDrawerContent(props:any) {
                 style={[styles.drawerItem, getDrawerItemStyle('Profile')]}
                 labelStyle={[styles.drawerLabel, activeRoute === 'Profile' && styles.activeLabel]}
             />
+            <DrawerItem
+                label="Note"
+                onPress={() => props.navigation.navigate('Note')}
+                style={[styles.drawerItem, getDrawerItemStyle('Note')]}
+                labelStyle={[styles.drawerLabel, activeRoute === 'Note' && styles.activeLabel]}
+            />
         </DrawerContentScrollView>
     );
 }
@@ -147,29 +153,41 @@ function DrawerNavigator() {
 
 function AppNavigator() {
     const [isLoggedIn, setIsLoggedIn] = useState(null);
+    const [hasSeenOnboarding, setHasSeenOnboarding] = useState(null);
 
     useEffect(() => {
-        const checkLoginStatus = async () => {
+        const checkStatus = async () => {
             const loggedInStatus = await AsyncStorage.getItem('isLoggedIn');
+            const onboardingStatus = await AsyncStorage.getItem('hasSeenOnboarding');
             setIsLoggedIn(loggedInStatus === 'true');
+            setHasSeenOnboarding(onboardingStatus === 'true');
         };
-        checkLoginStatus();
+        checkStatus();
     }, []);
 
-    if (isLoggedIn === null) return null; // Wait until login status is checked
+    if (isLoggedIn === null || hasSeenOnboarding === null) return null;
 
     return (
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
-                {isLoggedIn ? (
+                {!hasSeenOnboarding ? (
+                    <Stack.Screen
+                        name="Onboarding"
+                        component={OnboardingScreen}
+                        options={{
+                            animationEnabled: true,
+                        }}
+                    />
+                ) : isLoggedIn ? (
                     <Stack.Screen name="Flexido" component={DrawerNavigator} />
                 ) : (
-                    <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+                    <Stack.Screen name="Login" component={LoginScreen} />
                 )}
-                <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="Register" component={RegisterScreen} />
                 <Stack.Screen name="Note" component={Note} />
                 <Stack.Screen name="Task" component={Task} />
+                <Stack.Screen name="Login" component={LoginScreen}/>
+                <Stack.Screen name="Flexido" component={DrawerNavigator}/>
             </Stack.Navigator>
         </NavigationContainer>
     );

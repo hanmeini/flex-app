@@ -27,7 +27,7 @@ function OnboardingScreen({ navigation }:any)  {
   
     const handleGetStarted = () => {
       // Navigasi ke layar utama aplikasi atau layar berikutnya
-      navigation.navigate('Login');
+      navigation.navigate("Login");
     };
 
     const handleIndexChanged = (index: any) => {
