@@ -13,6 +13,7 @@ const Note = ({navigation}:any) => {
   const [notes, setNotes] = useState([]);
   const [reminderTime, setReminderTime] = useState('');
 
+<<<<<<< HEAD
   const showDatePicker = () => setDatePickerVisibility(true);
   const hideDatePicker = () => setDatePickerVisibility(false);
 
@@ -69,6 +70,9 @@ const Note = ({navigation}:any) => {
     return () => unsubscribe();
   }, []);
 
+=======
+const Note = () => {
+>>>>>>> 97805167b32fe667c59d47e93e400605a44487c2
   return (
     <View style={styles.container}>
       <View style={styles.judul}>
