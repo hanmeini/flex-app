@@ -45,7 +45,7 @@ const HomeScreen = () => {
     
     // Bersihkan listener ketika komponen di-unmount
     return unsubscribe;
-  }, []);
+  }, []); 
   return (
     <View style={styles.container}>
       {/* Header */}

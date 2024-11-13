@@ -2,10 +2,12 @@ import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { FIREBASE_APP } from '../../FirebaseConfig';
+import { getAuth } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const Note = ({navigation}:any) => {
+const Note = ({ navigation }: any) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [title, setTitle] = useState('');
@@ -16,7 +18,7 @@ const Note = ({navigation}:any) => {
   const showDatePicker = () => setDatePickerVisibility(true);
   const hideDatePicker = () => setDatePickerVisibility(false);
 
-  const handleConfirm = (date:any) => {
+  const handleConfirm = (date: any) => {
     setSelectedDate(date);
     setReminderTime(date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
     hideDatePicker();
@@ -24,7 +26,14 @@ const Note = ({navigation}:any) => {
 
   // Menambahkan catatan ke Firestore
   const handleAddNote = async () => {
-    const limitedDescription = description.split(' ').slice(0, 2).join(' ');
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid;
+
+    if (!userId) {
+      console.error("User not logged in");
+      return;
+    }
+
     const newNote = {
       title,
       description,
@@ -33,8 +42,8 @@ const Note = ({navigation}:any) => {
 
     try {
       const db = getFirestore(FIREBASE_APP);
-      const notesCollection = collection(db, 'notes');
-      await addDoc(notesCollection, {
+      const userNotesCollection = collection(db, `users/${userId}/notes`);
+      await addDoc(userNotesCollection, {
         title: newNote.title,
         description: newNote.description,
         time: newNote.time,
@@ -49,23 +58,23 @@ const Note = ({navigation}:any) => {
   };
 
   useEffect(() => {
-    // Ambil Firestore instance
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid;
+
+    if (!userId) return;
+
     const db = getFirestore(FIREBASE_APP);
+    const userNotesCollection = collection(db, `users/${userId}/notes`);
+    const q = query(userNotesCollection, orderBy('createdAt', 'desc'));
 
-    // Tentukan koleksi dan query
-    const notesCollection = collection(db, 'notes');
-    const q = query(notesCollection, orderBy('createdAt', 'desc'));
-
-    // Menggunakan onSnapshot untuk mendengarkan perubahan
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const newNotes = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setNotes(newNotes); // Set state notes dengan data baru
+      setNotes(newNotes);
     });
 
-    // Return unsubscribe untuk membersihkan listener saat komponen di-unmount
     return () => unsubscribe();
   }, []);
 
@@ -73,7 +82,7 @@ const Note = ({navigation}:any) => {
     <View style={styles.container}>
       <View style={styles.judul}>
         <Text style={styles.textJudul}>Judul</Text>
-        <TextInput 
+        <TextInput
           value={title}
           onChangeText={setTitle}
           placeholder='Ketikan sesuatu disini'
@@ -82,11 +91,11 @@ const Note = ({navigation}:any) => {
 
       <View style={styles.container2}>
         <ScrollView>
-          <TextInput 
+          <TextInput
             style={styles.formDeskripsi}
             value={description}
             onChangeText={setDescription}
-            placeholderTextColor='#fff' 
+            placeholderTextColor='#fff'
             placeholder='Ketikan sesuatu disini'
           />
         </ScrollView>
@@ -100,8 +109,8 @@ const Note = ({navigation}:any) => {
             <TouchableOpacity
               style={styles.check}
               onPress={() => {
-                handleAddNote(); // Add note to Firestore
-                navigation.navigate('Task', { title, time: reminderTime, description }); // Navigate to Task screen
+                handleAddNote();
+                navigation.navigate('Task', { title, time: reminderTime, description });
               }}
             >
               <Ionicons name="checkmark-outline" size={25} color="#fff" />
@@ -152,96 +161,96 @@ const Note = ({navigation}:any) => {
 export default Note;
 
 const styles = StyleSheet.create({
-    container:{
-        backgroundColor:'#fff',
-        flex:1,
-        paddingHorizontal:30,
-        paddingTop:10,
-    },
-    judul:{
-        backgroundColor:'#F4AB05',
-        maxWidth:'auto',
-        height:120,
-        paddingHorizontal:40,
-        paddingTop:30,
-        borderRadius:30,
-        marginTop:30,
-    },
-    textJudul:{
-        fontWeight:'bold',
-        fontSize:20,
-        letterSpacing:1,
-        color: 'rgba(0, 0, 0, 0.5)',
-        marginBottom:6,
-    },
-    container2:{
-        backgroundColor:'#1A2529',
-        height:580,
-        marginTop:30,
-        borderRadius:30,
-        padding:40,
-    },
-    containerPengingat:{
-        marginBottom:20,
-    },
-    buttonPengingat:{
-        backgroundColor:'#F4AB05',
-        borderRadius:30,
-        paddingVertical:7,
-        width:'40%',
-        paddingHorizontal:3,
-        alignItems:'center',
-        justifyContent:'center',
-        flexDirection:'row',
-    },
-    formDeskripsi:{
-        flexDirection:'column',
-        color:'#fff',
-        marginBottom:270,
-    },
-    containerbtn:{
-        justifyContent:'space-between',
-        display:'flex',
-        flexDirection:'row',
-    },
-    check:{
-        backgroundColor:'#F4AB05',
-        borderRadius:50,
-        padding:7,
-        width:50,
-        height:50,
-        alignItems:'center',
-        justifyContent:'center',
-        flexDirection:'row',
-    },
-    containerJam:{
-        height:150,
-        backgroundColor:'#dadada',
-        marginTop:20,
-        borderRadius:30,
-        opacity:0.5,
-        alignItems:'center',
-        justifyContent:'center',
-        gap:5,
-    },
-    dateText: {
-        color: '#000',
-        fontWeight: 'bold',
-    },
-    dateTimeContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap:50,
-        marginBottom: 20,
-    },
-    dateButton: {
-        backgroundColor: '#F4AB05',
-        padding: 10,
-        borderRadius: 8,
-    },
-    timeButton: {
-        backgroundColor: '#F4AB05',
-        padding: 10,
-        borderRadius: 8,
-    },
+  container:{
+      backgroundColor:'#fff',
+      flex:1,
+      paddingHorizontal:30,
+      paddingTop:10,
+  },
+  judul:{
+      backgroundColor:'#F4AB05',
+      maxWidth:'auto',
+      height:120,
+      paddingHorizontal:40,
+      paddingTop:30,
+      borderRadius:30,
+      marginTop:30,
+  },
+  textJudul:{
+      fontWeight:'bold',
+      fontSize:20,
+      letterSpacing:1,
+      color: 'rgba(0, 0, 0, 0.5)',
+      marginBottom:6,
+  },
+  container2:{
+      backgroundColor:'#1A2529',
+      height:580,
+      marginTop:30,
+      borderRadius:30,
+      padding:40,
+  },
+  containerPengingat:{
+      marginBottom:20,
+  },
+  buttonPengingat:{
+      backgroundColor:'#F4AB05',
+      borderRadius:30,
+      paddingVertical:7,
+      width:'40%',
+      paddingHorizontal:3,
+      alignItems:'center',
+      justifyContent:'center',
+      flexDirection:'row',
+  },
+  formDeskripsi:{
+      flexDirection:'column',
+      color:'#fff',
+      marginBottom:270,
+  },
+  containerbtn:{
+      justifyContent:'space-between',
+      display:'flex',
+      flexDirection:'row',
+  },
+  check:{
+      backgroundColor:'#F4AB05',
+      borderRadius:50,
+      padding:7,
+      width:50,
+      height:50,
+      alignItems:'center',
+      justifyContent:'center',
+      flexDirection:'row',
+  },
+  containerJam:{
+      height:150,
+      backgroundColor:'#dadada',
+      marginTop:20,
+      borderRadius:30,
+      opacity:0.5,
+      alignItems:'center',
+      justifyContent:'center',
+      gap:5,
+  },
+  dateText: {
+      color: '#000',
+      fontWeight: 'bold',
+  },
+  dateTimeContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap:50,
+      marginBottom: 20,
+  },
+  dateButton: {
+      backgroundColor: '#F4AB05',
+      padding: 10,
+      borderRadius: 8,
+  },
+  timeButton: {
+      backgroundColor: '#F4AB05',
+      padding: 10,
+      borderRadius: 8,
+  },
 });
