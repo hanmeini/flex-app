@@ -16,30 +16,31 @@ const data = [
   },
 ];
 
-function OnboardingScreen({ navigation }:any)  {
+function OnboardingScreen({ navigation }: any) {
 
-    const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-    const handleSkip = () => {
-      // Navigasi ke layar login atau halaman utama
-      navigation.navigate('AppNavigator');
-    };
-  
-    const handleGetStarted = () => {
-      // Navigasi ke layar utama aplikasi atau layar berikutnya
-      navigation.navigate("Login");
-    };
+  const handleSkip = () => {
+    navigation.navigate('AppNavigator');
+  };
 
-    const handleIndexChanged = (index: any) => {
-      setCurrentIndex(index);
-    };
-  
+  const handleSignUp = () => {
+    navigation.navigate("Register");
+  };
+
+  const handleLogin = () => {
+    navigation.navigate("Login");
+  };
+
+  const handleIndexChanged = (index: any) => {
+    setCurrentIndex(index);
+  };
 
   return (
-    <Swiper 
-      style={styles.wrapper} 
-      showsButtons={false} 
-      loop={false} 
+    <Swiper
+      style={styles.wrapper}
+      showsButtons={false}
+      loop={false}
       onIndexChanged={handleIndexChanged}
       scrollEnabled={currentIndex !== data.length - 1}  // Disable scroll on the last slide
       dotStyle={currentIndex === data.length - 1 ? { display: 'none' } : styles.dot}
@@ -49,21 +50,29 @@ function OnboardingScreen({ navigation }:any)  {
     >
       {data.map((item, index) => (
         <View style={styles.slide} key={index}>
-        <ImageBackground source={item.image} style={styles.imageBackground}>
-          {/* Tampilkan tombol "Get Started" dan teks "Skip" hanya di gambar terakhir */}
-          {index === data.length - 1 && (
-            <View style={styles.footer}>
-              {/* Tombol Get Started */}
-              <TouchableOpacity 
-                style={styles.getStartedButton} 
-                onPress={handleGetStarted} // Menggunakan navigation.navigate di sini
-              >
-                <Text style={styles.getStartedText}>Get Started</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </ImageBackground>
-      </View>
+          <ImageBackground source={item.image} style={styles.imageBackground}>
+            {/* Tampilkan tombol "Sign Up" dan "Login" hanya di gambar terakhir */}
+            {index === data.length - 1 && (
+              <View style={styles.footer}>
+                {/* Tombol Sign Up */}
+                <TouchableOpacity
+                  style={styles.signUpButton}
+                  onPress={handleSignUp}
+                >
+                  <Text style={styles.buttonText2}>Sign Up</Text>
+                </TouchableOpacity>
+                
+                {/* Tombol Login */}
+                <TouchableOpacity
+                  style={styles.loginButton}
+                  onPress={handleLogin}
+                >
+                  <Text style={styles.buttonText}>Log in</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ImageBackground>
+        </View>
       ))}
     </Swiper>
   );
@@ -85,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  }, 
+  },
   dot: {
     backgroundColor: '#ffffff',
     width: 15,
@@ -100,31 +109,40 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginHorizontal: 5,
   },
-   getStartedButton: {
-    backgroundColor: '#F4AB05',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 5,
-  },
-  getStartedText: {
-    fontSize: 16,
-    color: '#1A2529 ',
-    fontFamily: 'figtree-semibold',
-    
-  },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
     width: '100%',
-    paddingHorizontal: 20,
     position: 'absolute',
     bottom: 50,
   },
-  skipText: {
-    fontSize: 18,
-    color: '#FFF',
-    fontFamily: 'figtree-semibold'
+  signUpButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#f4ab05',
+    paddingHorizontal: 45,
+    borderRadius: 10,
+    
   },
+  loginButton: {
+    backgroundColor: '#f4ab05',
+    paddingVertical: 14,
+    paddingHorizontal: 45,
+    borderRadius: 10,
+    
+  },
+  buttonText: {
+    fontSize: 18,
+    color: '#1A2529',
+    fontFamily: 'figtree-semibold',
+  },
+  buttonText2: {
+    fontSize: 18,
+    color: '#f4ab05',
+    fontFamily: 'figtree-semibold',
+  },
+
 
 });

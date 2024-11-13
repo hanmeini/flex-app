@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 1,
     backgroundColor: '#888',
-    marginHorizontal: 10,
+    marginHorizontal: 11,
   },
   orText: {
     color: '#888',

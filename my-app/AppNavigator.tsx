@@ -6,7 +6,6 @@ import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@rea
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
-
 import HomeScreen from './src/components/Home';
 import TaskScreen from './src/components/Task';
 import CalendarScreen from './src/components/Calendar';
@@ -32,17 +31,24 @@ function TabNavigator() {
                 initialRouteName="Home"
                 screenOptions={{
                     tabBarActiveTintColor: '#F4AB05',
-                    tabBarStyle: { backgroundColor: '#1A2529' },
+                       tabBarStyle: {
+                        backgroundColor: '#1A2529',
+                        height: 72,
+                        paddingBottom: 9,
+                        paddingTop: 5,
+                        
+                    },
                     tabBarInactiveTintColor: 'gray',
                     headerShown: false,
+                    tabBarLabelStyle: { fontSize: 12, paddingBottom: 4, fontFamily: 'figtree'},
                 }}
             >
                 <Tab.Screen
-                    name="Home"
+                    name="Today"
                     component={HomeScreen}
                     options={{
                         tabBarIcon: ({ size, color }) => (
-                            <Ionicons name="home" size={size} color={color} />
+                            <Ionicons name="home-outline" size={21} color={color} />
                         ),
                     }}
                 />
@@ -51,7 +57,7 @@ function TabNavigator() {
                     component={TaskScreen}
                     options={{
                         tabBarIcon: ({ size, color }) => (
-                            <Ionicons name="list" size={size} color={color} />
+                            <Ionicons name="checkmark-done-circle-outline" size={25} color={color} />
                         ),
                     }}
                 />
@@ -60,7 +66,7 @@ function TabNavigator() {
                     component={CalendarScreen}
                     options={{
                         tabBarIcon: ({ size, color }) => (
-                            <Ionicons name="calendar" size={size} color={color} />
+                            <Ionicons name="calendar-clear-outline" size={21} color={color} />
                         ),
                     }}
                 />
@@ -69,7 +75,7 @@ function TabNavigator() {
                     component={ProfileScreen}
                     options={{
                         tabBarIcon: ({ size, color }) => (
-                            <Ionicons name="person" size={size} color={color} />
+                            <Ionicons name="person-circle-outline" size={27} color={color} />
                         ),
                     }}
                 />
