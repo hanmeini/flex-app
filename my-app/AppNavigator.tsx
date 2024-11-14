@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, useNavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import HomeScreen from './src/components/Home';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import TaskScreen from './src/components/Task';
 import CalendarScreen from './src/components/Calendar';
 import ProfileScreen from './src/components/Profile';
@@ -15,6 +16,8 @@ import Note from './src/components/Note';
 import LoginScreen from './src/screen/LoginScreen';
 import RegisterScreen from './src/screen/RegisterScreen';
 import Task from './src/components/Task';
+import { color } from '@rneui/themed/dist/config';
+
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -32,11 +35,12 @@ function TabNavigator() {
                 screenOptions={{
                     tabBarActiveTintColor: '#F4AB05',
                        tabBarStyle: {
-                        backgroundColor: '#1A2529',
+                        backgroundColor: '#141d20',
                         height: 72,
                         paddingBottom: 9,
                         paddingTop: 5,
-                        
+                        borderTopColor: '#3b3b3b',
+                        borderTopWidth: 0.3
                     },
                     tabBarInactiveTintColor: 'gray',
                     headerShown: false,
@@ -48,19 +52,86 @@ function TabNavigator() {
                     component={HomeScreen}
                     options={{
                         tabBarIcon: ({ size, color }) => (
-                            <Ionicons name="home-outline" size={21} color={color} />
+                            <Icon name="bullseye" size={25} color={color} />
                         ),
                     }}
                 />
                 <Tab.Screen
-                    name="Task"
+                    name="All Task"
                     component={TaskScreen}
                     options={{
                         tabBarIcon: ({ size, color }) => (
-                            <Ionicons name="checkmark-done-circle-outline" size={25} color={color} />
+                            <Icon name="tasks" size={20} color={color} />
                         ),
                     }}
                 />
+
+<Tab.Screen
+    name="CreateTask"
+    component={() => null} // Tidak ada komponen karena ini hanya tombol
+    options={{
+        tabBarIcon: ({ color }) => (
+            <Ionicons
+                name="add"
+                size={30}
+                color="#FFFFFF"
+                style={{ marginTop: 5 }}
+            />
+        ),
+        tabBarLabel: "", // Menghilangkan teks di bawah ikon
+        tabBarButton: (props) => {
+            const scaleValue = useRef(new Animated.Value(1)).current;
+
+            const animateIn = () => {
+                Animated.spring(scaleValue, {
+                    toValue: 1.2,
+                    useNativeDriver: true,
+                }).start();
+            };
+
+            const animateOut = () => {
+                Animated.spring(scaleValue, {
+                    toValue: 1,
+                    friction: 4, // Mengatur efek bouncing agar lebih halus
+                    useNativeDriver: true,
+                }).start();
+            };
+
+
+            return (
+                <TouchableOpacity
+                    {...props}
+                    onPress={() => {
+                        animateIn();
+                        setTimeout(() => {
+                            animateOut();
+                            props.navigation.navigate('Task');
+                        }, 100); // Animasi kembali ke ukuran awal sebelum navigasi
+                    }}
+                    style={{
+                        top: -30,
+                        width: 60,
+                        height: 60,
+                        borderRadius: 30,
+                        backgroundColor: '#F4AB05',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 5,
+                        elevation: 5,
+                    }}
+                >
+                    <Animated.View style={{ transform: [{  scale: scaleValue }] }}>
+                    <Icon name="plus" size={20} color="#141d20" />
+                    </Animated.View>
+                </TouchableOpacity>
+            );
+        },
+    }}
+/>
+
                 <Tab.Screen
                     name="Calendar"
                     component={CalendarScreen}
@@ -75,7 +146,7 @@ function TabNavigator() {
                     component={ProfileScreen}
                     options={{
                         tabBarIcon: ({ size, color }) => (
-                            <Ionicons name="person-circle-outline" size={27} color={color} />
+                            <Icon name="user" size={23} color={color} />
                         ),
                     }}
                 />
@@ -105,14 +176,14 @@ function CustomDrawerContent(props:any) {
         <DrawerContentScrollView {...props}>
             <DrawerItem
                 icon={({ size, color }) => <Ionicons name="home" size={size} color={color} />}
-                label="Home"
+                label="Today"
                 onPress={() => props.navigation.navigate('Home')}
                 style={[styles.drawerItem, getDrawerItemStyle('Home')]}
                 labelStyle={[styles.drawerLabel, activeRoute === 'Home' && styles.activeLabel]}
             />
             <DrawerItem
                 icon={({ size, color }) => <Ionicons name="list" size={size} color={color} />}
-                label="Task"
+                label="All Task"
                 onPress={() => props.navigation.navigate('Task')}
                 style={[styles.drawerItem, getDrawerItemStyle('Task')]}
                 labelStyle={[styles.drawerLabel, activeRoute === 'Task' && styles.activeLabel]}
@@ -143,9 +214,10 @@ function CustomDrawerContent(props:any) {
 
 function DrawerNavigator() {
     return (
-        <Drawer.Navigator drawerContent={(props) => <CustomDrawerContent {...props} />}>
+        <Drawer.Navigator drawerContent={(props) => <CustomDrawerContent {...props} />}
+        screenOptions={{headerShown: false}}>
             <Drawer.Screen
-                name="Flexido"
+                name="Flexidos"
                 component={TabNavigator}
                 options={{
                     headerStyle: { backgroundColor: '#1A2529', height: 90 },

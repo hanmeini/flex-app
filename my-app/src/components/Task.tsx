@@ -73,13 +73,7 @@ const Task = ({ navigation }: any) => {
         )}
       />
 
-      {/* Floating Add Button */}
-      <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={() => navigation.navigate("Note")}
-      >
-        <Ionicons name="add-outline" size={28} color="#fff" />
-      </TouchableOpacity>
+    
     </View>
   );
 };

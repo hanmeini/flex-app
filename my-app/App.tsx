@@ -12,7 +12,8 @@ export default function App() {
           await Font.loadAsync({
               'figtree': require('./assets/fonts/Figtree-Regular.ttf'),
               'figtree-semibold': require('./assets/fonts/Figtree-SemiBold.ttf') ,
-              'figtree-regular': require('./assets/fonts/Figtree-Regular.ttf')  // Adjust path if needed
+              'figtree-regular': require('./assets/fonts/Figtree-Regular.ttf'),
+              'figtree-bold': require('./assets/fonts/Figtree-Bold.ttf')   // Adjust path if needed
           });
           setFontsLoaded(true);
       };

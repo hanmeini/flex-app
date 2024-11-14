@@ -1,228 +1,206 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { ProgressBar } from 'react-native-paper';
-import { SearchBar } from '@rneui/themed'; 
-import TodoCard from './TodoCard'; // Import komponen TodoCard
-import { FIREBASE_AUTH } from '../../FirebaseConfig';
+import React, { useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { SearchBar } from '@rneui/themed';
+import { Icon } from 'react-native-paper';
+
+const tasks = [
+  { id: '1', title: 'Client Review & Feedback', project: 'Crypto Wallet Redesign', time: '10:00 PM - 11:45 PM', users: ['user1', 'user2'], status: 'Open' },
+  { id: '2', title: 'Create Wireframe', project: 'Crypto Wallet Redesign', time: '09:15 PM - 10:00 PM', users: ['user3', 'user4', 'user5', 'user6'], status: 'Closed' },
+  { id: '3', title: 'Design Logo', project: 'Crypto Wallet Redesign', time: '08:00 PM - 09:00 PM', users: ['user1', 'user3'], status: 'Archived' },
+  // Add more tasks as needed
+];
 
 const HomeScreen = () => {
-  // Data dummy card
-  const dataDummy = [
-    { id: 1, title: 'Tugas bahasa Indonesia', time: '08.00 - 24.00', description: 'segera kerjakan', date: '2024-11-08' },
-    { id: 2, title: 'Tugas matematika', time: '08.00 - 24.00', description: 'persiapan ujian', date: '2024-11-10' },
-    { id: 3, title: 'Tugas sejarah', time: '10.00 - 14.00', description: 'baca bab 3', date: '2024-11-08' },
-    { id: 4, title: 'Tugas fisika', time: '13.00 - 15.00', description: 'eksperimen', date: '2024-11-01' },
-    { id: 5, title: 'Tugas kimia', time: '16.00 - 18.00', description: 'periksa laporan', date: '2024-11-01' },
-  ];
+  const [search, setSearch] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('All');
 
-  // Ambil tanggal hari ini
-  const today = new Date().toISOString().split('T')[0];
+  // Filter tasks based on the selected filter
+  const filteredTasks = selectedFilter === 'All'
+    ? tasks
+    : tasks.filter(task => task.status === selectedFilter);
 
-  // Filter tugas yang hanya untuk hari ini
-  const tasksForToday = dataDummy.filter(task => task.date === today);
+  // Render each task card
+  const renderTask = ({ item }) => (
+    <View style={styles.taskCard}>
+      <View style={styles.taskInfo}>
+        <Text style={styles.taskTitle}>{item.title}</Text>
+        <Text style={styles.taskProject}>{item.project}</Text>
+        <Text style={styles.taskTime}>{item.time}</Text>
+      </View>
+      <View style={styles.taskActions}>
+        <View style={styles.userIcons}>
+          {item.users.slice(0, 3).map((user, index) => (
+            <Image
+              key={index}
+              source={{ uri: 'https://via.placeholder.com/30' }} // Replace with user image URIs
+              style={styles.userImage}
+            />
+          ))}
+          {item.users.length > 3 && (
+            <Text style={styles.moreUsers}>+{item.users.length - 3}</Text>
+          )}
+        </View>
+        <TouchableOpacity style={styles.checkIcon}>
+     
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
-  // Fungsi untuk menangani klik pengaturan
-  const handleSettingsPress = () => {
-    alert('Settings clicked');
-  };
-
-  //Profile
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = FIREBASE_AUTH.onAuthStateChanged((currentUser) => {
-      if (currentUser) {
-        setUser({
-          email: currentUser.email,
-          displayName: currentUser.displayName || 'User',
-          photoURL: currentUser.photoURL || 'url_default_gambar'
-        });
-      } else {
-        setUser(null);
-      }
-    });
-    
-    // Bersihkan listener ketika komponen di-unmount
-    return unsubscribe;
-  }, []); 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <HeaderSection user={user} />
+      {/* Search Bar */}
+      <SearchBar
+        placeholder="Tasks, events, and more"
+        onChangeText={setSearch}
+        value={search}
+        containerStyle={styles.searchContainer}
+        inputContainerStyle={styles.searchInputContainer}
+        inputStyle={styles.searchInput}
+        searchIcon={{ size: 23 }}
+      />
 
-      <ScrollView>
-        {/* Progress Section */}
-        <ProgressSection />
+      {/* Task Management Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Today's Task</Text>
+      </View>
 
-        {/* Divider */}
-        <View style={styles.divider}></View>
+      {/* Interactive Filter Tabs */}
+      <View style={styles.filterContainer}>
+        {['All', 'Personal', 'Work', 'Events'].map((filter) => (
+          <TouchableOpacity
+            key={filter}
+            style={[styles.filterTab, selectedFilter === filter && styles.activeFilterTab]}
+            onPress={() => setSelectedFilter(filter)}
+          >
+            <Text style={[styles.filterText, selectedFilter === filter && styles.activeFilterText]}>
+              {filter}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-        {/* Tugas Hari Ini */}
-        <TaskListSection tasks={tasksForToday} onSettingsPress={handleSettingsPress} />
-      </ScrollView>
+      {/* Task List */}
+      <FlatList
+        data={filteredTasks}
+        renderItem={renderTask}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.taskList}
+      />
     </View>
   );
 };
 
-// Komponen Header
-const HeaderSection = ({ user }:any) => (
-  <View style={styles.section}>
-    <View style={styles.headerContainer}>
-      <Image
-        source={user && user.photoURL ? { uri: user.photoURL } : require('../../assets/images/WhatsApp Image 2024-09-02 at 11.13.35.jpeg')}
-        style={styles.profileImage}
-      />
-      <View style={styles.headerTextContainer}>
-        <Text style={styles.headerText}>Hello, {user ? user.displayName : 'User'}!</Text>
-        <Text style={styles.subHeaderText}>{user ? user.email : 'View Account'}</Text>
-      </View>
-      <TouchableOpacity style={styles.notificationButton}>
-        <Ionicons name="notifications-outline" size={25} />
-      </TouchableOpacity>
-    </View>
-    <SearchBar placeholder='Type Here...' containerStyle={styles.searchContainer} />
-  </View>
-);
-
-// Komponen Progress
-const ProgressSection = () => (
-  <View style={styles.progress}>
-    <Text style={styles.progressText}>Progres</Text>
-    <View style={styles.progressButtons}>
-      <TouchableOpacity style={styles.progressButton}>
-        <Text style={styles.progressButtonText}>Harian</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.progressButton}>
-        <Text style={styles.progressButtonText}>Mingguan</Text>
-      </TouchableOpacity>
-    </View>
-    <View style={styles.progressContainer}>
-      <ProgressBar progress={0.7} color="#1A2529" style={styles.progressBar} />
-      <Text style={styles.progressPercentage}>50% selesai</Text>
-    </View>
-  </View>
-);
-
-// Komponen Daftar Tugas
-const TaskListSection = ({ tasks, onSettingsPress }:any) => (
-  <View style={styles.taskListContainer}>
-    <Text style={styles.taskListHeader}>Tugas Hari Ini</Text>
-    {tasks.length > 0 ? (
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TodoCard
-          title={item.title}
-          time={item.time}
-          description={item.description}
-          onSettingsPress={onSettingsPress}
-         />
-        )}
-      />
-    ) : (
-      <Text style={styles.noTasksText}>Tidak ada tugas untuk hari ini.</Text>
-    )}
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  section: {
-    backgroundColor: '#1A2529',
-    borderBottomLeftRadius: 50,
-    borderBottomRightRadius: 50,
-    paddingTop: 20,
-    paddingLeft: 25,
-    paddingRight: 25,
-    paddingBottom: 30,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profileImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 40,
-    marginRight: 15,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  headerText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 20,
-  },
-  subHeaderText: {
-    color: '#fff',
-  },
-  notificationButton: {
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 80,
+    backgroundColor: '#141d20',
+    padding: 15
   },
   searchContainer: {
-    marginTop: 10,
-    borderRadius: 30,
+    backgroundColor: '#141d20',
+    paddingTop: 40,
+    borderBottomWidth: 0,
+    borderTopWidth: 0
   },
-  progress: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  progressButtons: {
-    flexDirection: 'row',
-    gap: 5,
-  },
-  progressButton: {
+  searchInputContainer: {
     backgroundColor: '#1A2529',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 10,
+    borderRadius: 22,
+    width: '100%',
+    alignSelf: 'center',
   },
-  progressButtonText: {
+  searchInput: {
     color: '#fff',
+    fontSize: 16,
+    fontFamily: 'figtree'
   },
-  progressContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: '#F4AB05',
-    marginTop: 10,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 16,
+    paddingHorizontal: 16,
+    paddingTop: 15
+  },
+  headerTitle: {
+    fontSize: 24,
+    color: '#fff',
+    fontFamily: 'figtree-semibold'
+  },
+  headerDate: {
+    color: '#a0a0a0',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 16,
+  },
+  filterTab: {
+    paddingVertical: 4,
+    paddingHorizontal: 15,
     borderRadius: 20,
   },
-  progressText: {
-    color: '#000',
-    fontSize: 18,
+  activeFilterTab: {
+    backgroundColor: '#F4AB05',
+    fontFamily: 'figtree-semibold'
+  },
+  filterText: {
+    color: '#a0a0a0',
+    fontFamily: 'figtree'
+  },
+  activeFilterText: {
+    color: '#1A2529',
+    fontFamily: 'figtree-semibold'
+  },
+  taskList: {
+    paddingBottom: 20,
+  },
+  taskCard: {
+    flexDirection: 'row',
+    backgroundColor: '#1A2529',
+    padding: 16,
+    borderRadius: 8,
+    marginVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  taskInfo: {
+    flex: 1,
+  },
+  taskTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#fff',
   },
-  progressBar: {
-    height: 8,
-    borderRadius: 5,
+  taskProject: {
+    color: '#a0a0a0',
   },
-  progressPercentage: {
-    color: '#000',
-    marginTop: 5,
+  taskTime: {
+    color: '#a0a0a0',
+    marginTop: 4,
   },
-  divider: {
-    height: 2,
-    backgroundColor: '#DADADA',
-    marginVertical: 10,
+  taskActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  taskListContainer: {
-    padding: 20,
+  userIcons: {
+    flexDirection: 'row',
+    marginRight: 8,
   },
-  taskListHeader: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
+  userImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginLeft: -5,
+    borderWidth: 2,
+    borderColor: '#1A2529',
   },
-  noTasksText: {
-    color: 'gray',
+  moreUsers: {
+    color: '#a0a0a0',
+    marginLeft: 5,
+  },
+  checkIcon: {
+    padding: 5,
   },
 });
 
