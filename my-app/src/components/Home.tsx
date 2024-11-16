@@ -112,20 +112,7 @@ const HomeScreen = () => {
 
   // Render tugas
   const renderTask = ({ item }) => {
-    let categoryIcon;
-    switch (item.category) {
-      case 'Work':
-        categoryIcon = 'briefcase';
-        break;
-      case 'Personal':
-        categoryIcon = 'account';
-        break;
-      case 'Events':
-        categoryIcon = 'calendar';
-        break;
-      default:
-        categoryIcon = 'folder';
-    }
+    const categoryIcon = 'folder';
 
     return (
       <View style={styles.taskCard}>
