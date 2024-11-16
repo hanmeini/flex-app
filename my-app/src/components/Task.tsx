@@ -19,6 +19,7 @@ import { FIREBASE_APP } from "../../FirebaseConfig";
 
 const Task = ({ navigation }: any) => {
   const [notes, setNotes] = useState<any[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState("All");
 
   useEffect(() => {
     const auth = getAuth();
@@ -30,8 +31,8 @@ const Task = ({ navigation }: any) => {
     }
 
     const db = getFirestore(FIREBASE_APP);
-    const userNotesCollection = collection(db,`users/${userId}/notes`);
-    const q = query(userNotesCollection, orderBy("createdAt", "desc")); // Urutkan berdasarkan tanggal pembuatan
+    const userNotesCollection = collection(db, `users/${userId}/notes`);
+    const q = query(userNotesCollection, orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const newNotes = snapshot.docs.map((doc) => ({
@@ -44,38 +45,67 @@ const Task = ({ navigation }: any) => {
     return () => unsubscribe();
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <FlatList
-        data={notes}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="calendar" size={30} color="#fff" />
-            </View>
-            <View style={styles.contentContainer}>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.time}>{item.time}</Text>
-              {item.description && (
-                <Text style={styles.description}>
-                  {item.description.split(" ").slice(0, 5).join(" ") + "..."}
-                </Text>
-              )}
-            </View>
-            <TouchableOpacity
-              onPress={() => console.log("Settings pressed")}
-              style={styles.settingsIcon}
-            >
-              <Ionicons name="settings-outline" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+  const filteredNotes =
+    selectedFilter === "All"
+      ? notes
+      : notes.filter((note) => note.category === selectedFilter);
 
-    
-    </View>
-  );
+      return (
+        <View style={styles.container}>
+          <View>
+            <Text style={styles.judul}>Categories</Text>
+          <View style={styles.filterContainer}>
+            {["All", "Personal", "Work", "Events"].map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  styles.filterTab,
+                  selectedFilter === filter && styles.activeFilterTab,
+                ]}
+                onPress={() => setSelectedFilter(filter)}
+              >
+                <Text
+                  style={[
+                    styles.filterText,
+                    selectedFilter === filter && styles.activeFilterText,
+                  ]}
+                >
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          </View>
+          <Text style={styles.judul}>My Task</Text>
+          <FlatList
+          style={styles.flatlist}
+            data={filteredNotes}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="calendar" size={30} color="#fff" />
+                </View>
+                <View style={styles.contentContainer}>
+                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={styles.time}>{item.time}</Text>
+                  {item.description && (
+                    <Text style={styles.description}>
+                      {item.description.split(" ").slice(0, 5).join(" ") + "..."}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={() => console.log("Settings pressed")}
+                  style={styles.settingsIcon}
+                >
+                  <Ionicons name="settings-outline" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        </View>
+      );      
 };
 
 const styles = StyleSheet.create({
@@ -83,7 +113,35 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 60,
+    marginBottom:20,
+  },
+  filterContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom:-120,
+  },
+  filterTab: {
+    width: "48%", // Two boxes per row
+    aspectRatio: 1, // Make the box square
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f2f2f2",
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  activeFilterTab: {
+    backgroundColor: "#F4AB05",
+  },
+  filterText: {
+    color: "#a0a0a0",
+    fontFamily: "figtree",
+    fontSize: 16,
+  },
+  activeFilterText: {
+    color: "#1A2529",
+    fontFamily: "figtree-semibold",
   },
   card: {
     flexDirection: "row",
@@ -121,15 +179,15 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 15,
   },
-  floatingButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: "#F4AB05",
-    borderRadius: 15,
-    padding: 17,
-    elevation: 5,
+  flatlist: {
+    flexGrow:1,
   },
+  judul:{
+    fontSize:20,
+    fontWeight:'500',
+    marginBottom:15,
+  }
+
 });
 
 export default Task;

@@ -27,7 +27,7 @@ const RegisterScreen = ({ navigation }:any) => {
       setModalVisible(true); // Tampilkan modal
       setTimeout(() => {
         setModalVisible(false); // Sembunyikan modal setelah 2 detik
-        navigation.navigate('Home'); // Arahkan ke Home
+        navigation.navigate('Flexido'); // Arahkan ke Home
       }, 2000);
     } catch (error: any) {
       console.log(error);

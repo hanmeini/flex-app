@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/flexido.png",
     "userInterfaceStyle": "light",
+    "scheme":"Flexido",
     "splash": {
       "image": "./assets/images/splashscreen.png",
       "resizeMode": "contain",
@@ -18,7 +19,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.aplication.flexido"
     },
     "web": {
       "favicon": "./assets/favicon.png",

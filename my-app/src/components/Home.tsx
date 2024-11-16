@@ -20,7 +20,7 @@ const HomeScreen = () => {
     : tasks.filter(task => task.status === selectedFilter);
 
   // Render each task card
-  const renderTask = ({ item }) => (
+  const renderTask = ({ item }:any) => (
     <View style={styles.taskCard}>
       <View style={styles.taskInfo}>
         <Text style={styles.taskTitle}>{item.title}</Text>
