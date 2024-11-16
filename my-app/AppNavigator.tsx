@@ -17,6 +17,7 @@ import LoginScreen from './src/screen/LoginScreen';
 import RegisterScreen from './src/screen/RegisterScreen';
 import Task from './src/components/Task';
 import { color } from '@rneui/themed/dist/config';
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 
 
 const Tab = createBottomTabNavigator();
@@ -48,7 +49,7 @@ function TabNavigator() {
                 }}
             >
                 <Tab.Screen
-                    name="Today"
+                    name="Days"
                     component={HomeScreen}
                     options={{
                         tabBarIcon: ({ size, color }) => (
@@ -80,6 +81,7 @@ function TabNavigator() {
         ),
         tabBarLabel: "", // Menghilangkan teks di bawah ikon
         tabBarButton: (props) => {
+            const navigation = useNavigation();  // Mengakses navigation dengan useNavigation()
             const scaleValue = useRef(new Animated.Value(1)).current;
 
             const animateIn = () => {
@@ -105,7 +107,7 @@ function TabNavigator() {
                         animateIn();
                         setTimeout(() => {
                             animateOut();
-                            props.navigation.navigate('Task');
+                            navigation.navigate('Note');
                         }, 100); // Animasi kembali ke ukuran awal sebelum navigasi
                     }}
                     style={{
