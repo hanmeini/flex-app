@@ -103,7 +103,7 @@ const Note = ({ navigation }: any) => {
         <View style={styles.containerPengingat}>
           <View style={styles.containerbtn}>
             <TouchableOpacity style={styles.buttonPengingat} onPress={showDatePicker}>
-              <Ionicons name="notifications-outline" size={25} color='#fff' />
+              <Ionicons name="alarm-outline" size={25} color='#fff' />
               <Text style={{ color: '#fff' }}>Pengingat</Text>
             </TouchableOpacity>
             <TouchableOpacity

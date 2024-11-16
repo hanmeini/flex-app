@@ -111,10 +111,9 @@ const Task = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#1A2529",
     paddingHorizontal: 20,
     paddingTop: 60,
-    marginBottom:20,
   },
   filterContainer: {
     flexDirection: "row",
@@ -186,6 +185,7 @@ const styles = StyleSheet.create({
     fontSize:20,
     fontWeight:'500',
     marginBottom:15,
+    color:'#fff'
   }
 
 });

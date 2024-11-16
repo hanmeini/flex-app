@@ -1,55 +1,148 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { SearchBar } from '@rneui/themed';
-import { Icon } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const tasks = [
-  { id: '1', title: 'Client Review & Feedback', project: 'Crypto Wallet Redesign', time: '10:00 PM - 11:45 PM', users: ['user1', 'user2'], status: 'Open' },
-  { id: '2', title: 'Create Wireframe', project: 'Crypto Wallet Redesign', time: '09:15 PM - 10:00 PM', users: ['user3', 'user4', 'user5', 'user6'], status: 'Closed' },
-  { id: '3', title: 'Design Logo', project: 'Crypto Wallet Redesign', time: '08:00 PM - 09:00 PM', users: ['user1', 'user3'], status: 'Archived' },
-  // Add more tasks as needed
+// Data awal
+const initialTasks = [
+  { id: '1', title: 'Meeting with Client', time: '11:25 PM', completed: false, category: 'Work' },
+  { id: '2', title: 'Create Wireframe', time: '09:15 PM', completed: true, category: 'Work' },
+  { id: '3', title: 'Design Logo', time: '08:00 PM', completed: false, category: 'Personal' },
+  { id: '4', title: 'Plan Birthday Party', time: '07:00 PM', completed: false, category: 'Events' },
 ];
+
+// Fungsi untuk memparsing waktu
+const parseTime = (time) => {
+  const [hours, minutes] = time.split(' ')[0].split(':').map(num => parseInt(num));
+  const isPM = time.includes('PM');
+  return isPM ? (hours % 12 + 12) * 60 + minutes : hours * 60 + minutes;
+};
 
 const HomeScreen = () => {
   const [search, setSearch] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
+  const [tasks, setTasks] = useState(initialTasks);
 
-  // Filter tasks based on the selected filter
-  const filteredTasks = selectedFilter === 'All'
-    ? tasks
-    : tasks.filter(task => task.status === selectedFilter);
+  const filters = ['All', 'Personal', 'Work', 'Events'];
 
-  // Render each task card
-  const renderTask = ({ item }:any) => (
+  // Waktu saat ini (dalam format menit)
+  const currentTime = new Date();
+  const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+
+  // Filter tugas berdasarkan kategori dan pencarian
+  const filterTasks = () => {
+    let filteredTasks = tasks;
+
+    if (selectedFilter !== 'All') {
+      filteredTasks = filteredTasks.filter((task) => task.category === selectedFilter);
+    }
+
+    if (search.trim() !== '') {
+      filteredTasks = filteredTasks.filter((task) =>
+        task.title.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    return filteredTasks;
+  };
+
+  const filteredTasks = filterTasks();
+
+  // Fungsi untuk mengelompokkan tugas
+  const groupTasks = () => {
+    const inProgress = [];
+    const completed = [];
+    const upcoming = [];
+
+    filteredTasks.forEach(task => {
+      const taskTime = parseTime(task.time);
+
+      if (task.completed) {
+        completed.push(task);
+      } else if (taskTime > currentMinutes) {
+        upcoming.push(task);
+      } else {
+        inProgress.push(task);
+      }
+    });
+
+    return { inProgress, completed, upcoming };
+  };
+
+  const { inProgress, completed, upcoming } = groupTasks();
+
+  // Toggle status tugas
+  const toggleTaskCompletion = (taskId) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId
+          ? { ...task, completed: !task.completed }
+          : task
+      )
+    );
+  };
+
+  // Render tugas
+ const renderTask = ({ item }) => {
+  // Menentukan ikon berdasarkan kategori
+  let categoryIcon;
+  switch (item.category) {
+    case 'Work':
+      categoryIcon = 'briefcase';
+      break;
+    case 'Personal':
+      categoryIcon = 'account';
+      break;
+    case 'Events':
+      categoryIcon = 'calendar';
+      break;
+    default:
+      categoryIcon = 'folder'; // Default icon
+  }
+
+  return (
     <View style={styles.taskCard}>
-      <View style={styles.taskInfo}>
-        <Text style={styles.taskTitle}>{item.title}</Text>
-        <Text style={styles.taskProject}>{item.project}</Text>
-        <Text style={styles.taskTime}>{item.time}</Text>
-      </View>
-      <View style={styles.taskActions}>
-        <View style={styles.userIcons}>
-          {item.users.slice(0, 3).map((user, index) => (
-            <Image
-              key={index}
-              source={{ uri: 'https://via.placeholder.com/30' }} // Replace with user image URIs
-              style={styles.userImage}
+      <View style={styles.indicator} />
+      <View style={styles.taskContent}>
+        <Text
+          style={[
+            styles.taskTitle,
+            item.completed && { textDecorationLine: 'line-through', color: '#999' },
+          ]}
+        >
+          {item.title}
+        </Text>
+
+        {/* Gabungkan waktu dan kategori dalam satu baris */}
+        <View style={styles.timeCategoryContainer}>
+          <Text style={styles.taskTime}>Today</Text>
+          <View style={styles.separatorLine} />
+          <Text style={styles.taskTime}>{item.time}</Text>
+
+          <View style={styles.categoryContainer}>
+            <MaterialCommunityIcons   
+              name={categoryIcon}
+              size={15}
+              color="#ffff"
             />
-          ))}
-          {item.users.length > 3 && (
-            <Text style={styles.moreUsers}>+{item.users.length - 3}</Text>
-          )}
+            <Text style={styles.categoryText}>{item.category}</Text>
+          </View>
         </View>
-        <TouchableOpacity style={styles.checkIcon}>
-     
-        </TouchableOpacity>
       </View>
+
+      <TouchableOpacity onPress={() => toggleTaskCompletion(item.id)} style={styles.checkIcon}>
+        <MaterialCommunityIcons
+          name={item.completed ? 'close-circle' : 'circle-outline'}
+          size={24}
+          color={item.completed ? '#FF6B6B' : '#ffff'}
+        />
+      </TouchableOpacity>
     </View>
   );
+};
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
       <SearchBar
         placeholder="Tasks, events, and more"
         onChangeText={setSearch}
@@ -60,14 +153,8 @@ const HomeScreen = () => {
         searchIcon={{ size: 23 }}
       />
 
-      {/* Task Management Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Today's Task</Text>
-      </View>
-
-      {/* Interactive Filter Tabs */}
       <View style={styles.filterContainer}>
-        {['All', 'Personal', 'Work', 'Events'].map((filter) => (
+        {filters.map((filter) => (
           <TouchableOpacity
             key={filter}
             style={[styles.filterTab, selectedFilter === filter && styles.activeFilterTab]}
@@ -80,60 +167,75 @@ const HomeScreen = () => {
         ))}
       </View>
 
-      {/* Task List */}
-      <FlatList
-        data={filteredTasks}
-        renderItem={renderTask}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.taskList}
-      />
+      {/* Grup In Progress */}
+      <View>
+        <Text style={styles.groupTitle}>In Progress</Text>
+        <FlatList
+          data={inProgress}
+          renderItem={renderTask}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.taskList}
+        />
+      </View>
+
+      {/* Grup Completed */}
+      <View>
+        <Text style={styles.groupTitle}>Completed</Text>
+        <FlatList
+          data={completed}
+          renderItem={renderTask}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.taskList}
+        />
+      </View>
+
+      {/* Grup Upcoming */}
+      <View>
+        <Text style={styles.groupTitle}>Upcoming</Text>
+        <FlatList
+          data={upcoming}
+          renderItem={renderTask}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.taskList}
+        />
+      </View>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#141d20',
-    padding: 15
+    padding: 15,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#444',
+    marginVertical: 6,
   },
   searchContainer: {
     backgroundColor: '#141d20',
     paddingTop: 40,
     borderBottomWidth: 0,
-    borderTopWidth: 0
+    borderTopWidth: 0,
   },
   searchInputContainer: {
-    backgroundColor: '#1A2529',
+    backgroundColor: '#1a2529',
     borderRadius: 22,
     width: '100%',
     alignSelf: 'center',
   },
   searchInput: {
-    color: '#fff',
+    color: '#999',
     fontSize: 16,
-    fontFamily: 'figtree'
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 16,
-    paddingHorizontal: 16,
-    paddingTop: 15
-  },
-  headerTitle: {
-    fontSize: 24,
-    color: '#fff',
-    fontFamily: 'figtree-semibold'
-  },
-  headerDate: {
-    color: '#a0a0a0',
+    fontFamily: 'figtree',
   },
   filterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginVertical: 16,
+    marginVertical: 14,
   },
   filterTab: {
     paddingVertical: 4,
@@ -141,66 +243,77 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   activeFilterTab: {
-    backgroundColor: '#F4AB05',
-    fontFamily: 'figtree-semibold'
+    backgroundColor: '#f4ab05',
   },
   filterText: {
-    color: '#a0a0a0',
-    fontFamily: 'figtree'
+    color: '#666',
+    fontFamily: 'figtree-semibold',
   },
   activeFilterText: {
-    color: '#1A2529',
-    fontFamily: 'figtree-semibold'
+    color: '#141d20',
   },
   taskList: {
     paddingBottom: 20,
   },
   taskCard: {
     flexDirection: 'row',
-    backgroundColor: '#1A2529',
+    backgroundColor: '#1a2529',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     marginVertical: 8,
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  taskInfo: {
+  indicator: {
+    width: 4,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 2,
+    marginRight: 12,
+  },
+  taskContent: {
     flex: 1,
   },
   taskTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
-  },
-  taskProject: {
-    color: '#a0a0a0',
+    fontFamily: 'figtree-semibold',
   },
   taskTime: {
-    color: '#a0a0a0',
+    color: '#999',
+    fontSize: 12,
     marginTop: 4,
-  },
-  taskActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userIcons: {
-    flexDirection: 'row',
-    marginRight: 8,
-  },
-  userImage: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginLeft: -5,
-    borderWidth: 2,
-    borderColor: '#1A2529',
-  },
-  moreUsers: {
-    color: '#a0a0a0',
-    marginLeft: 5,
+    fontFamily: 'figtree-semibold',
   },
   checkIcon: {
-    padding: 5,
+    padding: 8,
+  },
+  timeCategoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  separatorLine: {
+    width: 1,
+    height: 15,
+    marginTop: 2,
+    backgroundColor: '#666',
+    marginHorizontal: 8,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,  // Adds some space between time and category
+  },
+  categoryText: {
+    color: '#fdfdfd',
+    fontSize: 12,
+    marginLeft: 5,
+  },
+  groupTitle: {
+    color: '#fff',
+    fontSize: 18,
+    marginVertical: 10,
+    fontFamily: 'figtree-semibold',
   },
 });
 
