@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SearchBar } from '@rneui/themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-// Data awal
-const initialTasks = [
-  { id: '1', title: 'Meeting with Client', time: '11:25 PM', completed: false, category: 'Work' },
-  { id: '2', title: 'Create Wireframe', time: '09:15 PM', completed: true, category: 'Work' },
-  { id: '3', title: 'Design Logo', time: '08:00 PM', completed: false, category: 'Personal' },
-  { id: '4', title: 'Plan Birthday Party', time: '07:00 PM', completed: false, category: 'Events' },
-];
+import {
+  getFirestore,
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { FIREBASE_APP } from "../../FirebaseConfig";
 
 // Fungsi untuk memparsing waktu
 const parseTime = (time) => {
@@ -20,10 +21,37 @@ const parseTime = (time) => {
 
 const HomeScreen = () => {
   const [search, setSearch] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('All');
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState([]);
+  const [selectedFilter, setSelectedFilter] = useState("All");
 
+  // Filters untuk kategori
   const filters = ['All', 'Personal', 'Work', 'Events'];
+
+  // Ambil data dari Firestore
+  useEffect(() => {
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid;
+
+    if (!userId) {
+      console.error("User not logged in");
+      return;
+    }
+
+    const db = getFirestore(FIREBASE_APP);
+    const userNotesCollection = collection(db, `users/${userId}/notes`);
+    const q = query(userNotesCollection, orderBy("createdAt", "desc"));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newTasks = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        completed: false, // Default status
+      }));
+      setTasks(newTasks);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Waktu saat ini (dalam format menit)
   const currentTime = new Date();
@@ -83,66 +111,68 @@ const HomeScreen = () => {
   };
 
   // Render tugas
- const renderTask = ({ item }) => {
-  // Menentukan ikon berdasarkan kategori
-  let categoryIcon;
-  switch (item.category) {
-    case 'Work':
-      categoryIcon = 'briefcase';
-      break;
-    case 'Personal':
-      categoryIcon = 'account';
-      break;
-    case 'Events':
-      categoryIcon = 'calendar';
-      break;
-    default:
-      categoryIcon = 'folder'; // Default icon
-  }
+  const renderTask = ({ item }) => {
+    let categoryIcon;
+    switch (item.category) {
+      case 'Work':
+        categoryIcon = 'briefcase';
+        break;
+      case 'Personal':
+        categoryIcon = 'account';
+        break;
+      case 'Events':
+        categoryIcon = 'calendar';
+        break;
+      default:
+        categoryIcon = 'folder';
+    }
 
-  return (
-    <View style={styles.taskCard}>
-      <View style={styles.indicator} />
-      <View style={styles.taskContent}>
-        <Text
-          style={[
-            styles.taskTitle,
-            item.completed && { textDecorationLine: 'line-through', color: '#999' },
-          ]}
-        >
-          {item.title}
-        </Text>
+    return (
+      <View style={styles.taskCard}>
+        <View style={styles.indicator} />
+        <View style={styles.taskContent}>
+          <Text
+            style={[
+              styles.taskTitle,
+              item.completed && { textDecorationLine: 'line-through', color: '#999' },
+            ]}
+          >
+            {item.title}
+          </Text>
 
-        {/* Gabungkan waktu dan kategori dalam satu baris */}
-        <View style={styles.timeCategoryContainer}>
-          <Text style={styles.taskTime}>Today</Text>
-          <View style={styles.separatorLine} />
-          <Text style={styles.taskTime}>{item.time}</Text>
+          <View style={styles.timeCategoryContainer}>
+            <Text style={styles.taskTime}>Today</Text>
+            <View style={styles.separatorLine} />
+            <Text style={styles.taskTime}>{item.time}</Text>
 
-          <View style={styles.categoryContainer}>
-            <MaterialCommunityIcons   
-              name={categoryIcon}
-              size={15}
-              color="#ffff"
-            />
-            <Text style={styles.categoryText}>{item.category}</Text>
+            <View style={styles.categoryContainer}>
+              <MaterialCommunityIcons
+                name={categoryIcon}
+                size={15}
+                color="#ffff"
+              />
+              <Text style={styles.categoryText}>{item.category}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <TouchableOpacity onPress={() => toggleTaskCompletion(item.id)} style={styles.checkIcon}>
-        <MaterialCommunityIcons
-          name={item.completed ? 'close-circle' : 'circle-outline'}
-          size={24}
-          color={item.completed ? '#FF6B6B' : '#ffff'}
-        />
-      </TouchableOpacity>
-    </View>
-  );
-};
+        <TouchableOpacity onPress={() => toggleTaskCompletion(item.id)} style={styles.checkIcon}>
+          <MaterialCommunityIcons
+            name={item.completed ? 'close-circle' : 'circle-outline'}
+            size={24}
+            color={item.completed ? '#FF6B6B' : '#ffff'}
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ flexGrow: 1 }}
+      showsVerticalScrollIndicator={false}
+    >
       <SearchBar
         placeholder="Tasks, events, and more"
         onChangeText={setSearch}
@@ -167,7 +197,6 @@ const HomeScreen = () => {
         ))}
       </View>
 
-      {/* Grup In Progress */}
       <View>
         <Text style={styles.groupTitle}>In Progress</Text>
         <FlatList
@@ -175,10 +204,10 @@ const HomeScreen = () => {
           renderItem={renderTask}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.taskList}
+          scrollEnabled={false} // Disable scroll untuk FlatList agar `ScrollView` menangani scroll
         />
       </View>
 
-      {/* Grup Completed */}
       <View>
         <Text style={styles.groupTitle}>Completed</Text>
         <FlatList
@@ -186,10 +215,10 @@ const HomeScreen = () => {
           renderItem={renderTask}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.taskList}
+          scrollEnabled={false}
         />
       </View>
 
-      {/* Grup Upcoming */}
       <View>
         <Text style={styles.groupTitle}>Upcoming</Text>
         <FlatList
@@ -197,12 +226,12 @@ const HomeScreen = () => {
           renderItem={renderTask}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.taskList}
+          scrollEnabled={false}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {

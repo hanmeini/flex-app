@@ -5,9 +5,11 @@ import { Picker } from '@react-native-picker/picker'; // Mengimpor dari @react-n
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SearchBar } from '@rneui/themed'; 
+import { ProgressBar } from 'react-native-paper';
+import { PieChartProps } from 'react-native-chart-kit/dist/PieChart';
 
 const Profile = ({navigation}:any) => {
-  const [selectedDay, setSelectedDay] = useState("Hari Ini");
+  const [selectedDay, setSelectedDay] = useState("Hari Ini"); 
 
   return (
     <ScrollView style={styles.container}>
@@ -16,12 +18,7 @@ const Profile = ({navigation}:any) => {
           <Image 
             source={require('../../assets/images/WhatsApp Image 2024-09-02 at 11.13.35.jpeg')}
             style={styles.profileImage} />
-          <Text style={styles.namaText}>Mikael Kelvian</Text>
-      </View>
-      <View>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text>masuk</Text>
-        </TouchableOpacity>
+          <Text style={styles.namaText}>Mikhael Kelvian</Text>
       </View>
 
       {/* Ringkasan Tugas */}
@@ -44,42 +41,15 @@ const Profile = ({navigation}:any) => {
 
       {/* Kotak Chart Section */}
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Statistik Tugas</Text>
-        <LineChart
-          data={{
-            labels: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
-            datasets: [
-              {
-                data: [4, 0, 3, 2, 6, 2, 3], // Data yang ditampilkan di chart
-              },
-            ],
-          }}
-          width={Dimensions.get("window").width - 60} // Lebar chart menyesuaikan layar
-          height={220}
-          yAxisLabel=""
-          yAxisSuffix=" Tugas"
-          chartConfig={{
-            backgroundColor: "#f9f9f9",
-            backgroundGradientFrom: "#fff",
-            backgroundGradientTo: "#fff",
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            style: {
-              borderRadius: 16,
-            },
-            propsForDots: {
-              r: "6",
-              strokeWidth: "2",
-              stroke: "#ffa726",
-            },
-          }}
-          bezier
-          style={{
-            marginVertical: 10,
-            borderRadius: 16,
-          }}
-        />
+        <Text style={styles.chartTitle}>Penyelesaian Tugas Harian</Text>
+        <View>
+          <Text style={styles.textstatus}>Belum selesai</Text>
+          <ProgressBar  progress={0.5} color="#D27D3D" style={styles.full}/>
+          <Text style={styles.textstatus}>Tugas Tertunda</Text>
+          <ProgressBar  progress={0.8} color="#1F5EAD" style={styles.full}/>
+          <Text style={styles.textstatus}>Selesai</Text>
+          <ProgressBar  progress={0.3} color="#63A133" style={styles.full}/>
+        </View>
       </View>
 
       {/* Tugas dalam 7 hari kedepan */}
@@ -87,10 +57,13 @@ const Profile = ({navigation}:any) => {
         <Text style={styles.dayText}>Tugas dalam 7 hari kedepan</Text>
       </View>
 
+      <View style={{justifyContent:'center', alignItems:'center', flex:1}}>
+      </View>
+
       {/* Tugas yang belum selesai */}
       <View style={styles.yetTaskContainer}>
         <View style={styles.yetTaskHeader}>
-          <Text style={styles.yetTaskTitle}>Tugas yang belum selesai</Text>
+          <Text style={styles.yetTaskTitle}>Klasifikasi Tugas yang belum selesai</Text>
           <Picker
             selectedValue={selectedDay}
             style={styles.picker}
@@ -115,24 +88,28 @@ export default Profile;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
+    paddingHorizontal:20,
+    paddingTop:50,
+    backgroundColor: '#1A2529',
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    marginTop: 5,
+    marginLeft: 2,
   },
   profileImage: {
-    width: 70,
-    height: 70,
+    width: 55,
+    height: 55,
     borderRadius: 40, // Membuat gambar profil menjadi bulat
-    marginRight: 15,
+    marginRight: 20,
+    marginLeft: 13,
   },
   namaText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000',
+    color: '#fff',
   },
   loginContainer: {
     justifyContent: 'center',
@@ -145,7 +122,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
     marginBottom: 20,
+    marginTop: 25,
     textAlign: 'left',
+    color: '#fff'
   },
   taskSummaryContainer: {
     flexDirection: 'row',
@@ -154,7 +133,7 @@ const styles = StyleSheet.create({
   taskBox: {
     width: '49%', // Mengambil 49% dari lebar layar untuk dua kotak
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#F4AB05',
     borderRadius: 10,
     alignItems: 'center',
     borderWidth: 1,
@@ -163,17 +142,26 @@ const styles = StyleSheet.create({
   taskNumber: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#000000',
   },
   taskLabel: {
     fontSize: 16,
-    color: '#777',
+    color: '#000000',
     marginTop: 5,
+  },
+  full: {   //progress
+    height: 9,
+    marginRight: 8,
+    borderRadius: 5,
+    marginVertical: 20,
+  },
+  textstatus:{
+    marginBottom: -19,
   },
   chartContainer: {
     padding: 20,
     backgroundColor: '#f9f9f9',
-    borderRadius: 10,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: '#ddd',
     marginVertical: 20,
@@ -190,6 +178,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 10,
+    marginBottom: 17,
   },
   yetTaskContainer: {
     backgroundColor: '#f9f9f9',
@@ -197,7 +186,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 10,
+    borderRadius: 17,
     flex: 1, // Memastikan container memanjang ke bawah
   },
   yetTaskHeader: {
@@ -209,6 +198,8 @@ const styles = StyleSheet.create({
   yetTaskTitle: {
     fontSize: 15,
     fontWeight: 'bold',
+    marginTop: 1,
+    paddingBottom: 30,
   },
   picker: {
     height: 50,
