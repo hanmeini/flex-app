@@ -87,7 +87,7 @@ const Note = ({ navigation }: any) => {
           value={title}
           onChangeText={setTitle}
           placeholder="Ketikan sesuatu disini"
-          placeholderTextColor="#000"
+          placeholderTextColor="#fff"
         />
       </View>
 
@@ -127,6 +127,7 @@ const Note = ({ navigation }: any) => {
           <View style={styles.categorySection}>
             <Text style={styles.sectionTitle}>Pilih Kategori:</Text>
             {categories.map((category) => (
+              <View style={{ maxWidth:'auto',flexDirection:'row', justifyContent:'space-between' }}>
               <TouchableOpacity
                 key={category}
                 style={[
@@ -144,24 +145,8 @@ const Note = ({ navigation }: any) => {
                   {category}
                 </Text>
               </TouchableOpacity>
+              </View>
             ))}
-
-            {/* Add New Category */}
-            <View style={styles.newCategorySection}>
-              <TextInput
-                style={styles.newCategoryInput}
-                value={newCategory}
-                onChangeText={setNewCategory}
-                placeholder="Tambah kategori baru"
-                placeholderTextColor="#fff"
-              />
-              <TouchableOpacity
-                style={styles.addCategoryButton}
-                onPress={handleAddCategory}
-              >
-                <Ionicons name="add-outline" size={20} color="#fff" />
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </View>
@@ -181,15 +166,13 @@ export default Note;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: "#141d20",
     flex: 1,
     paddingHorizontal: 30,
     paddingTop: 10,
   },
   judul: {
-    backgroundColor: "#F4AB05",
     height: 120,
-    paddingHorizontal: 40,
     paddingTop: 30,
     borderRadius: 30,
     marginTop: 30,
@@ -197,15 +180,13 @@ const styles = StyleSheet.create({
   textJudul: {
     fontWeight: "bold",
     fontSize: 20,
-    color: "rgba(0, 0, 0, 0.5)",
+    color: "#fff",
     marginBottom: 6,
   },
   container2: {
-    backgroundColor: "#1A2529",
-    height: 580,
+    height: 700,
     marginTop: 30,
     borderRadius: 30,
-    padding: 40,
   },
   formDeskripsi: {
     color: "#fff",
@@ -218,7 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F4AB05",
     borderRadius: 30,
     paddingVertical: 7,
-    paddingHorizontal: 3,
+    paddingHorizontal: 15,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -234,6 +215,9 @@ const styles = StyleSheet.create({
   },
   categorySection: {
     marginTop: 20,
+    marginBottom:40,
+    maxWidth:'auto',
+    flexDirection:'column'
   },
   sectionTitle: {
     color: "#fff",
@@ -273,4 +257,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
   },
+  containerbtn:{
+    flexDirection:'row',
+    justifyContent:'space-between'
+  }
 });

@@ -18,6 +18,7 @@ import RegisterScreen from './src/screen/RegisterScreen';
 import Task from './src/components/Task';
 import { color } from '@rneui/themed/dist/config';
 import { useNavigation } from '@react-navigation/native'; // Import useNavigation
+import CategoryNotes from './src/components/CategoriesNotes';
 
 
 const Tab = createBottomTabNavigator();
@@ -268,6 +269,7 @@ function AppNavigator() {
                 <Stack.Screen name="Task" component={Task} />
                 <Stack.Screen name="Login" component={LoginScreen}/>
                 <Stack.Screen name="Flexido" component={DrawerNavigator}/>
+                <Stack.Screen name="CategoryNotes" component={CategoryNotes} />
             </Stack.Navigator>
         </NavigationContainer>
     );

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Calendar } from 'react-native-calendars';
-import ToDoCard from './TodoCard';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
     getFirestore,
     collection,
@@ -35,15 +35,15 @@ const CustomCalendar = () => {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const newNotes = snapshot.docs.map((doc) => {
                 const data = doc.data();
-                const createdAt = data.createdAt?.toDate(); // Pastikan createdAt adalah Timestamp Firebase
+                const createdAt = data.createdAt?.toDate();
                 const dayName = createdAt
                     ? new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(createdAt)
                     : "Unknown Day";
                 return {
                     id: doc.id,
                     ...data,
-                    day: dayName, // Nama hari
-                    date: createdAt ? createdAt.toISOString().split('T')[0] : null, // Tanggal
+                    day: dayName,
+                    date: createdAt ? createdAt.toISOString().split('T')[0] : null,
                 };
             });
             setNotes(newNotes);
@@ -67,10 +67,6 @@ const CustomCalendar = () => {
         return acc;
     }, {});
 
-    const handleSettingsPress = () => {
-        alert('Settings clicked');
-    };
-
     return (
         <ScrollView style={styles.container}>
             <View style={styles.containerCalendar}>
@@ -82,14 +78,6 @@ const CustomCalendar = () => {
                                 month: 'short',
                                 day: 'numeric',
                                 year: 'numeric',
-                            })}
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={showDatePicker} style={styles.timeButton}>
-                        <Text style={styles.dateText}>
-                            {selectedDate.toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
                             })}
                         </Text>
                     </TouchableOpacity>
@@ -122,7 +110,6 @@ const CustomCalendar = () => {
                     }}
                     style={styles.calendar}
                 />
-
                 <DateTimePickerModal
                     isVisible={isDatePickerVisible}
                     mode="datetime"
@@ -132,18 +119,32 @@ const CustomCalendar = () => {
             </View>
 
             <View style={styles.divider}></View>
+
             <View style={styles.containerReminder}>
                 {Object.keys(taskGroup).map((day) => (
                     <View key={day}>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10,color:'#fff' }}>{day}</Text>
-                        {taskGroup[day].map((item, index) => (
-                            <ToDoCard
-                                key={index}
-                                title={item.title}
-                                time={item.time}
-                                description={item.description}
-                                onSettingsPress={handleSettingsPress}
-                            />
+                        <Text style={styles.groupTitle}>{day}</Text>
+                        {taskGroup[day].map((item) => (
+                            <View style={styles.taskCard} key={item.id}>
+                                <View style={styles.indicator} />
+                                <View style={styles.taskContent}>
+                                    <Text style={styles.taskTitle}>{item.title}</Text>
+                                    <View style={styles.timeCategoryContainer}>
+                                        <Text style={styles.taskTime}>{item.time}</Text>
+                                        <View style={styles.separatorLine} />
+                                        <View style={styles.categoryContainer}>
+                                            <MaterialCommunityIcons
+                                                name="folder"
+                                                size={16}
+                                                color="#fff"
+                                            />
+                                            <Text style={styles.categoryText}>
+                                                {item.category || "No Category"}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
                         ))}
                     </View>
                 ))}
@@ -153,14 +154,14 @@ const CustomCalendar = () => {
 };
 
 const styles = StyleSheet.create({
-    container:{
-        backgroundColor:'#1A2529'
+    container: {
+        backgroundColor: '#141d20',
+        flex: 1,
     },
     containerCalendar: {
         padding: 20,
-        backgroundColor: '#1A2529',
+        backgroundColor: '#141d20',
         borderRadius: 30,
-        flex: 1,
         margin: 20,
     },
     label: {
@@ -169,15 +170,9 @@ const styles = StyleSheet.create({
     },
     dateTimeContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         marginBottom: 20,
     },
     dateButton: {
-        backgroundColor: '#2E3742',
-        padding: 10,
-        borderRadius: 8,
-    },
-    timeButton: {
         backgroundColor: '#2E3742',
         padding: 10,
         borderRadius: 8,
@@ -196,6 +191,58 @@ const styles = StyleSheet.create({
     },
     containerReminder: {
         margin: 20,
+    },
+    groupTitle: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    taskCard: {
+        flexDirection: 'row',
+        backgroundColor: '#1A2529',
+        padding: 16,
+        borderRadius: 12,
+        marginVertical: 8,
+        alignItems: 'center',
+    },
+    indicator: {
+        width: 4,
+        backgroundColor: '#FF6B6B',
+        borderRadius: 2,
+        marginRight: 12,
+    },
+    taskContent: {
+        flex: 1,
+    },
+    taskTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#fff',
+    },
+    timeCategoryContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    taskTime: {
+        color: '#999',
+        fontSize: 12,
+    },
+    separatorLine: {
+        width: 1,
+        height: 15,
+        backgroundColor: '#666',
+        marginHorizontal: 8,
+    },
+    categoryContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    categoryText: {
+        color: '#fff',
+        marginLeft: 5,
+        fontSize: 12,
     },
 });
 

@@ -135,7 +135,7 @@ const HomeScreen = () => {
             <View style={styles.categoryContainer}>
               <MaterialCommunityIcons
                 name={categoryIcon}
-                size={15}
+                size={16}
                 color="#ffff"
               />
               <Text style={styles.categoryText}>{item.category}</Text>
