@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Calendar } from 'react-native-calendars';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -60,6 +60,29 @@ const CustomCalendar = () => {
         hideDatePicker();
     };
 
+    // Fungsi menambahkan acara ke kalender perangkat
+    const addToCalendar = () => {
+        const eventConfig = {
+            title: 'Custom Event', // Bisa diganti dengan input dari user
+            startDate: selectedDate.toISOString(), // Tanggal yang dipilih di kalender
+            endDate: new Date(selectedDate.getTime() + 60 * 60 * 1000).toISOString(), // Tambahkan 1 jam
+            location: 'Online',
+            notes: 'This is a sample event added via CustomCalendar.',
+        };
+
+        addEvent(eventConfig)
+            .then((eventId) => {
+                if (eventId) {
+                    Alert.alert('Success', 'Event added to your calendar.');
+                } else {
+                    Alert.alert('Cancelled', 'Event creation was cancelled.');
+                }
+            })
+            .catch((error) => {
+                Alert.alert('Error', `Failed to add event: ${error.message}`);
+            });
+    };
+
     // Grupkan berdasarkan nama hari
     const taskGroup = notes.reduce((acc, task) => {
         const groupKey = task.day || "Unknown Day";
@@ -82,6 +105,10 @@ const CustomCalendar = () => {
                         </Text>
                     </TouchableOpacity>
                 </View>
+
+                <TouchableOpacity style={styles.addEventButton} onPress={addToCalendar}>
+                    <Text style={styles.addEventButtonText}>Add to Calendar</Text>
+                </TouchableOpacity>
 
                 <Calendar
                     markedDates={{
@@ -180,6 +207,17 @@ const styles = StyleSheet.create({
     dateText: {
         color: '#F4AB05',
         fontWeight: 'bold',
+    },
+    addEventButton: {
+        marginTop: 20,
+        padding: 15,
+        backgroundColor: '#F4AB05',
+        borderRadius: 10,
+    },
+    addEventButtonText: {
+        color: '#1A2529',
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
     calendar: {
         borderRadius: 10,

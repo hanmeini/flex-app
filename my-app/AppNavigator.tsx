@@ -264,6 +264,8 @@ function AppNavigator() {
                 ) : (
                     <Stack.Screen name="Login" component={LoginScreen} />
                 )}
+
+<Stack.Screen name="TaskDetail" component={TaskDetailScreen}/>
                 <Stack.Screen name="Register" component={RegisterScreen} />
                 <Stack.Screen name="Note" component={Note} />
                 <Stack.Screen name="Task" component={Task} />

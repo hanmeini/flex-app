@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1A2529',
+    backgroundColor: '#141a20',
     paddingHorizontal: 30,
   },
   eyeIcon: {

@@ -8,6 +8,9 @@ import {
   query,
   orderBy,
   onSnapshot,
+  deleteDoc,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
@@ -23,6 +26,11 @@ const HomeScreen = () => {
   const [search, setSearch] = useState('');
   const [tasks, setTasks] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("All");
+  const [expandedGroups, setExpandedGroups] = useState({
+    overdue: false,
+    completed: false,
+    upcoming: false,
+  });
 
   // Filters untuk kategori
   const filters = ['All', 'Personal', 'Work', 'Events'];
@@ -45,7 +53,6 @@ const HomeScreen = () => {
       const newTasks = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-        completed: false, // Default status
       }));
       setTasks(newTasks);
     });
@@ -99,24 +106,80 @@ const HomeScreen = () => {
 
   const { inProgress, completed, upcoming } = groupTasks();
 
-  // Toggle status tugas
-  const toggleTaskCompletion = (taskId) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === taskId
-          ? { ...task, completed: !task.completed }
-          : task
-      )
-    );
+  // Cek jika ada tugas untuk ditampilkan
+  const noTasksMessage = (
+    <View style={styles.noTasksMessageContainer}>
+      <Text style={styles.noTasksMessageText}>You don't have any tasks yet.</Text>
+    </View>
+  );
+
+  // Toggle status tugas (centang/ubah status di Firestore)
+  const toggleTaskCompletion = async (taskId, currentStatus) => {
+    try {
+      const auth = getAuth();
+      const userId = auth.currentUser?.uid;
+
+      if (!userId) {
+        console.error("User not logged in");
+        return;
+      }
+
+      const db = getFirestore(FIREBASE_APP);
+      const taskRef = doc(db, `users/${userId}/notes`, taskId);
+
+      // Update status di Firestore
+      await updateDoc(taskRef, { completed: !currentStatus });
+
+      // Perbarui status di state lokal
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === taskId ? { ...task, completed: !currentStatus } : task
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling completion:", error);
+    }
+  };
+
+  // Fungsi untuk menghapus tugas
+  const deleteTask = async (taskId) => {
+    try {
+      const auth = getAuth();
+      const userId = auth.currentUser?.uid;
+
+      if (!userId) {
+        console.error("User not logged in");
+        return;
+      }
+
+      const db = getFirestore(FIREBASE_APP);
+      const taskRef = doc(db, `users/${userId}/notes`, taskId);
+
+      await deleteDoc(taskRef); // Hapus dokumen dari Firestore
+
+      // Hapus tugas dari state lokal
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+
+      console.log(`Task with ID ${taskId} deleted successfully`);
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
   };
 
   // Render tugas
   const renderTask = ({ item }) => {
-    const categoryIcon = 'folder';
+    const categoryIcon = 'clipboard-outline';
+
+    const getIndicatorColor = () => {
+      if (item.completed) return "#4CAF50"; // Hijau untuk tugas yang selesai
+      const taskTime = parseTime(item.time);
+      return taskTime > currentMinutes ? "#FFC107" : "#FF6B6B"; // Kuning untuk tugas mendatang, merah untuk overdue
+    };
 
     return (
       <View style={styles.taskCard}>
-        <View style={styles.indicator} />
+        <View style={[styles.indicator, { backgroundColor: getIndicatorColor() }]} />
+
         <View style={styles.taskContent}>
           <Text
             style={[
@@ -133,6 +196,7 @@ const HomeScreen = () => {
             <Text style={styles.taskTime}>{item.time}</Text>
 
             <View style={styles.categoryContainer}>
+              <View style={styles.verticalSeparator} />
               <MaterialCommunityIcons
                 name={categoryIcon}
                 size={16}
@@ -143,15 +207,36 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity onPress={() => toggleTaskCompletion(item.id)} style={styles.checkIcon}>
-          <MaterialCommunityIcons
-            name={item.completed ? 'close-circle' : 'circle-outline'}
-            size={24}
-            color={item.completed ? '#FF6B6B' : '#ffff'}
-          />
-        </TouchableOpacity>
+        {item.completed ? (
+          <TouchableOpacity onPress={() => deleteTask(item.id)} style={styles.checkIcon}>
+            <MaterialCommunityIcons
+              name="close"
+              size={24}
+              color="#FF6B6B"
+            />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={() => toggleTaskCompletion(item.id, item.completed)} style={styles.checkIcon}>
+            <MaterialCommunityIcons
+              name="circle-outline"
+              size={24}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+
+        )}
+
+        
       </View>
     );
+  };
+
+  // Fungsi untuk toggle dropdown
+  const toggleGroup = (group) => {
+    setExpandedGroups((prevState) => ({
+      ...prevState,
+      [group]: !prevState[group],
+    }));
   };
 
   return (
@@ -171,54 +256,96 @@ const HomeScreen = () => {
       />
 
       <View style={styles.filterContainer}>
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[styles.filterTab, selectedFilter === filter && styles.activeFilterTab]}
-            onPress={() => setSelectedFilter(filter)}
-          >
-            <Text style={[styles.filterText, selectedFilter === filter && styles.activeFilterText]}>
-              {filter}
-            </Text>
-          </TouchableOpacity>
+        {filters.map((filter, index) => (
+          <React.Fragment key={filter}>
+            <TouchableOpacity
+              style={[styles.filterTab, selectedFilter === filter && styles.activeFilterTab]}
+              onPress={() => setSelectedFilter(filter)}
+            >
+              <Text style={[styles.filterText, selectedFilter === filter && styles.activeFilterText]}>
+                {filter}
+              </Text>
+            </TouchableOpacity>
+            {index < filters.length - 1 && <View style={styles.filterSeparator} />}
+          </React.Fragment>
         ))}
       </View>
 
+      {/* Overdue */}
       <View>
-        <Text style={styles.groupTitle}>In Progress</Text>
-        <FlatList
-          data={inProgress}
-          renderItem={renderTask}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.taskList}
-          scrollEnabled={false} // Disable scroll untuk FlatList agar `ScrollView` menangani scroll
-        />
+        <TouchableOpacity onPress={() => toggleGroup('overdue')} style={styles.groupHeader}>
+          <Text style={styles.groupTitle}>Overdue</Text>
+          <MaterialCommunityIcons
+            name={expandedGroups.overdue ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+            style={styles.chevronIcon}
+          />
+        </TouchableOpacity>
+        {expandedGroups.overdue && (
+          inProgress.length === 0 ? noTasksMessage : (
+            <FlatList
+              data={inProgress}
+              renderItem={renderTask}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.taskList}
+              scrollEnabled={false}
+            />
+          )
+        )}
       </View>
 
+      {/* Completed */}
       <View>
-        <Text style={styles.groupTitle}>Completed</Text>
-        <FlatList
-          data={completed}
-          renderItem={renderTask}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.taskList}
-          scrollEnabled={false}
-        />
+        <TouchableOpacity onPress={() => toggleGroup('completed')} style={styles.groupHeader}>
+          <Text style={styles.groupTitle}>Completed</Text>
+          <MaterialCommunityIcons
+            name={expandedGroups.completed ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+            style={styles.chevronIcon}
+          />
+        </TouchableOpacity>
+        {expandedGroups.completed && (
+          completed.length === 0 ? noTasksMessage : (
+            <FlatList
+              data={completed}
+              renderItem={renderTask}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.taskList}
+              scrollEnabled={false}
+            />
+          )
+        )}
       </View>
 
+      {/* Upcoming */}
       <View>
-        <Text style={styles.groupTitle}>Upcoming</Text>
-        <FlatList
-          data={upcoming}
-          renderItem={renderTask}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.taskList}
-          scrollEnabled={false}
-        />
+        <TouchableOpacity onPress={() => toggleGroup('upcoming')} style={styles.groupHeader}>
+          <Text style={styles.groupTitle}>Upcoming</Text>
+          <MaterialCommunityIcons
+            name={expandedGroups.upcoming ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+            style={styles.chevronIcon}
+          />
+        </TouchableOpacity>
+        {expandedGroups.upcoming && (
+          upcoming.length === 0 ? noTasksMessage : (
+            <FlatList
+              data={upcoming}
+              renderItem={renderTask}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.taskList}
+              scrollEnabled={false}
+            />
+          )
+        )}
       </View>
     </ScrollView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -230,6 +357,19 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#444',
     marginVertical: 6,
+  },
+  noTasksMessageContainer: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  noTasksMessageText: {
+    color: '#999',
+    fontSize: 16,
+    fontFamily: 'figtree-semibold',
+    marginTop: 15,
+    textAlign: 'center',
   },
   searchContainer: {
     backgroundColor: '#141d20',
@@ -284,6 +424,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF6B6B',
     borderRadius: 2,
     marginRight: 12,
+    height: '100%'
   },
   taskContent: {
     flex: 1,
@@ -296,7 +437,7 @@ const styles = StyleSheet.create({
   },
   taskTime: {
     color: '#999',
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 4,
     fontFamily: 'figtree-semibold',
   },
@@ -331,6 +472,31 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     fontFamily: 'figtree-semibold',
   },
+  verticalSeparator: {
+    width: 1,
+    height: 15, // Sesuaikan tinggi garis
+    backgroundColor: '#666', // Warna garis
+    marginRight: 8, // Jarak garis ke ikon kategori
+  },
+  filterSeparator: {
+    width: 1, // Lebar garis separator
+    height: '60%', // Tinggi garis
+    backgroundColor: '#444', // Warna separator
+    alignSelf: 'center', // Posisikan separator di tengah secara vertikal
+    marginHorizontal: 10, // Jarak antara filter dan separator
+  },
+  // Gaya untuk grup header
+  groupHeader: {
+    flexDirection: 'row',   // Mengatur grup header menjadi baris
+    justifyContent: 'space-between', // Menyebarkan elemen ke kedua sisi
+    alignItems: 'center',   // Menyusun elemen secara vertikal sejajar
+    paddingVertical: 10,
+  },
+  // Gaya untuk ikon chevron (panah)
+  chevronIcon: {
+    marginLeft: 10,   // Memberikan sedikit jarak antara teks dan ikon
+  },
+  
 });
 
 export default HomeScreen;
