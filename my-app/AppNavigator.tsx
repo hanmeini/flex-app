@@ -19,6 +19,7 @@ import Task from './src/components/Task';
 import { color } from '@rneui/themed/dist/config';
 import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 import CategoryNotes from './src/components/CategoriesNotes';
+import TaskDetailScreen from './src/components/TaskDetailScreen';
 
 
 const Tab = createBottomTabNavigator();
