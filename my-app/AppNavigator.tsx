@@ -19,6 +19,8 @@ import Task from './src/components/Task';
 import { color } from '@rneui/themed/dist/config';
 import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 import CategoryNotes from './src/components/CategoriesNotes';
+import TaskDetailScreen from './src/components/TaskDetail';
+import TaskDetail from './src/components/TaskDetail';
 
 
 const Tab = createBottomTabNavigator();
@@ -265,7 +267,7 @@ function AppNavigator() {
                     <Stack.Screen name="Login" component={LoginScreen} />
                 )}
 
-<Stack.Screen name="TaskDetail" component={TaskDetailScreen}/>
+                <Stack.Screen name='TaskDetail' component={TaskDetail}/>
                 <Stack.Screen name="Register" component={RegisterScreen} />
                 <Stack.Screen name="Note" component={Note} />
                 <Stack.Screen name="Task" component={Task} />
