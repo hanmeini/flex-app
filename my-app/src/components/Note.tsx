@@ -181,7 +181,7 @@ export default Note;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: "#141a20",
     flex: 1,
     paddingHorizontal: 30,
     paddingTop: 10,
