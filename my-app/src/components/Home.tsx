@@ -14,10 +14,11 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
+import { useNavigation } from '@react-navigation/native';
 
 // Fungsi untuk memparsing waktu
-const parseTime = (time) => {
-  const [hours, minutes] = time.split(' ')[0].split(':').map(num => parseInt(num));
+const parseTime = (time: { split: (arg0: string) => { split: (arg0: string) => { (): any; new(): any; map: { (arg0: (num: any) => number): [any, any]; new(): any; }; }; }[]; includes: (arg0: string) => any; }) => {
+  const [hours, minutes] = time.split(' ')[0].split(':').map((num: string) => parseInt(num));
   const isPM = time.includes('PM');
   return isPM ? (hours % 12 + 12) * 60 + minutes : hours * 60 + minutes;
 };
@@ -32,6 +33,17 @@ const HomeScreen = () => {
     upcoming: false,
   });
 
+  const navigation = useNavigation();  
+
+  const handleTaskPress = (taskId: any, completed: undefined) => {
+    if (completed) {
+      // Jika tugas sudah selesai, beri opsi untuk mereschedule
+      navigation.navigate('TaskDetail', { taskId, canReschedule: true });
+    } else {
+      // Jika tugas belum selesai, arahkan ke detail task
+      navigation.navigate('TaskDetail', { taskId, canReschedule: false });
+    }
+  };
   // Filters untuk kategori
   const filters = ['All', 'Personal', 'Work', 'Events'];
 
@@ -85,9 +97,9 @@ const HomeScreen = () => {
 
   // Fungsi untuk mengelompokkan tugas
   const groupTasks = () => {
-    const inProgress = [];
-    const completed = [];
-    const upcoming = [];
+    const inProgress: never[] = [];
+    const completed: never[] = [];
+    const upcoming: never[] = [];
 
     filteredTasks.forEach(task => {
       const taskTime = parseTime(task.time);
@@ -114,7 +126,7 @@ const HomeScreen = () => {
   );
 
   // Toggle status tugas (centang/ubah status di Firestore)
-  const toggleTaskCompletion = async (taskId, currentStatus) => {
+  const toggleTaskCompletion = async (taskId: string, currentStatus: any) => {
     try {
       const auth = getAuth();
       const userId = auth.currentUser?.uid;
@@ -142,7 +154,7 @@ const HomeScreen = () => {
   };
 
   // Fungsi untuk menghapus tugas
-  const deleteTask = async (taskId) => {
+  const deleteTask = async (taskId: string) => {
     try {
       const auth = getAuth();
       const userId = auth.currentUser?.uid;
@@ -177,7 +189,10 @@ const HomeScreen = () => {
     };
 
     return (
-      <View style={styles.taskCard}>
+      <TouchableOpacity
+      style={styles.taskCard}
+      onPress={() => handleTaskPress(item.id, item.completed)}  // Tambahkan flag completed
+    >
         <View style={[styles.indicator, { backgroundColor: getIndicatorColor() }]} />
 
         <View style={styles.taskContent}>
@@ -225,14 +240,12 @@ const HomeScreen = () => {
           </TouchableOpacity>
 
         )}
-
-        
-      </View>
+      </TouchableOpacity>
     );
   };
 
   // Fungsi untuk toggle dropdown
-  const toggleGroup = (group) => {
+  const toggleGroup = (group: string) => {
     setExpandedGroups((prevState) => ({
       ...prevState,
       [group]: !prevState[group],
