@@ -93,7 +93,6 @@ const CustomCalendar = () => {
     return (
         <ScrollView style={styles.container}>
             <View style={styles.containerCalendar}>
-                <Text style={styles.label}>Due Date</Text>
                 <View style={styles.dateTimeContainer}>
                     <TouchableOpacity onPress={showDatePicker} style={styles.dateButton}>
                         <Text style={styles.dateText}>
@@ -140,7 +139,7 @@ const CustomCalendar = () => {
                 <DateTimePickerModal
                     isVisible={isDatePickerVisible}
                     mode="datetime"
-                    onConfirm={handleConfirm}
+                    onConfirm={handleConfirm }
                     onCancel={hideDatePicker}
                 />
             </View>
@@ -151,12 +150,14 @@ const CustomCalendar = () => {
                 {Object.keys(taskGroup).map((day) => (
                     <View key={day}>
                         <Text style={styles.groupTitle}>{day}</Text>
-                        {taskGroup[day].map((item) => (
+                        {taskGroup[day].map((item:any) => (
                             <View style={styles.taskCard} key={item.id}>
                                 <View style={styles.indicator} />
                                 <View style={styles.taskContent}>
                                     <Text style={styles.taskTitle}>{item.title}</Text>
                                     <View style={styles.timeCategoryContainer}>
+                                        <Text style={{ color:'#fff' }}>{day}</Text>
+                                        <View style={styles.separatorLine} />
                                         <Text style={styles.taskTime}>{item.time}</Text>
                                         <View style={styles.separatorLine} />
                                         <View style={styles.categoryContainer}>

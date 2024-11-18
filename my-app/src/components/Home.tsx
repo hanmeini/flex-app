@@ -35,7 +35,7 @@ const HomeScreen = () => {
 
   const navigation = useNavigation();  
 
-  const handleTaskPress = (taskId: any, completed: undefined) => {
+  const handleTaskPress = (taskId: any, completed: undefined) => {   
     if (completed) {
       // Jika tugas sudah selesai, beri opsi untuk mereschedule
       navigation.navigate('TaskDetail', { taskId, canReschedule: true });

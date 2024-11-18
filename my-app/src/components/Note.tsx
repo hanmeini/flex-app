@@ -14,7 +14,6 @@ const Note = ({ navigation }: any) => {
   const [reminderTime, setReminderTime] = useState("");
   const [categories, setCategories] = useState(["Personal", "Work", "Events"]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [newCategory, setNewCategory] = useState("");
 
   // Show and hide date picker
   const showDatePicker = () => setDatePickerVisibility(true);
@@ -24,7 +23,10 @@ const Note = ({ navigation }: any) => {
   const handleConfirm = (date: Date) => {
     setSelectedDate(date);
     setReminderTime(
-      date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+      `${date.toLocaleDateString("en-GB")} ${date.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
     );
     hideDatePicker();
   };
@@ -68,16 +70,6 @@ const Note = ({ navigation }: any) => {
     }
   };
 
-  // Add new category
-  const handleAddCategory = () => {
-    if (newCategory.trim() && !categories.includes(newCategory)) {
-      setCategories((prev) => [...prev, newCategory]);
-      setNewCategory("");
-    } else {
-      console.error("Category is empty or already exists.");
-    }
-  };
-
   return (
     <View style={styles.container}>
       {/* Input Title */}
@@ -88,11 +80,14 @@ const Note = ({ navigation }: any) => {
           onChangeText={setTitle}
           placeholder="Ketikan sesuatu disini"
           placeholderTextColor="#fff"
+          style={{ color:'#fff' }}
         />
       </View>
+      {/* Divider */}
+      <View style={styles.divider} />
 
+      {/* Input Description */}
       <View style={styles.container2}>
-        {/* Input Description */}
         <ScrollView>
           <TextInput
             style={styles.formDeskripsi}
@@ -104,9 +99,10 @@ const Note = ({ navigation }: any) => {
           />
         </ScrollView>
 
+        {/* Reminder and Categories */}
         <View style={styles.containerPengingat}>
-          {/* Reminder Time Button */}
           <View style={styles.containerbtn}>
+            {/* Reminder Time Button */}
             <TouchableOpacity
               style={styles.buttonPengingat}
               onPress={showDatePicker}
@@ -126,27 +122,27 @@ const Note = ({ navigation }: any) => {
           {/* Display Categories */}
           <View style={styles.categorySection}>
             <Text style={styles.sectionTitle}>Pilih Kategori:</Text>
-            {categories.map((category) => (
-              <View style={{ maxWidth:'auto',flexDirection:'row', justifyContent:'space-between' }}>
-              <TouchableOpacity
-                key={category}
-                style={[
-                  styles.categoryButton,
-                  selectedCategory === category && styles.selectedCategoryButton,
-                ]}
-                onPress={() => setSelectedCategory(category)}
-              >
-                <Text
+            <View style={styles.categoryRow}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category}
                   style={[
-                    styles.categoryText,
-                    selectedCategory === category && styles.selectedCategoryText,
+                    styles.categoryButton,
+                    selectedCategory === category && styles.selectedCategoryButton,
                   ]}
+                  onPress={() => setSelectedCategory(category)}
                 >
-                  {category}
-                </Text>
-              </TouchableOpacity>
-              </View>
-            ))}
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      selectedCategory === category && styles.selectedCategoryText,
+                    ]}
+                  >
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
       </View>
@@ -154,7 +150,7 @@ const Note = ({ navigation }: any) => {
       {/* DateTime Picker Modal */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
-        mode="time"
+        mode="datetime"
         onConfirm={handleConfirm}
         onCancel={hideDatePicker}
       />
@@ -172,7 +168,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   judul: {
-    height: 120,
     paddingTop: 30,
     borderRadius: 30,
     marginTop: 30,
@@ -183,9 +178,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginBottom: 6,
   },
+  divider: {
+    height: 1,
+    backgroundColor: "#444",
+    marginVertical: 10,
+  },
   container2: {
     height: 700,
-    marginTop: 30,
+    marginTop: 10,
     borderRadius: 30,
   },
   formDeskripsi: {
@@ -215,20 +215,25 @@ const styles = StyleSheet.create({
   },
   categorySection: {
     marginTop: 20,
-    marginBottom:40,
-    maxWidth:'auto',
-    flexDirection:'column'
+    marginBottom:30,
   },
   sectionTitle: {
     color: "#fff",
     marginBottom: 10,
     fontWeight: "bold",
   },
+  categoryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
   categoryButton: {
-    padding: 10,
+    padding: 8,
     borderRadius: 8,
     backgroundColor: "#444",
     marginBottom: 5,
+    minWidth: "30%",
+    alignItems: "center",
   },
   selectedCategoryButton: {
     backgroundColor: "#F4AB05",
@@ -239,26 +244,8 @@ const styles = StyleSheet.create({
   selectedCategoryText: {
     color: "#000",
   },
-  newCategorySection: {
+  containerbtn: {
     flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
+    justifyContent: "space-between",
   },
-  newCategoryInput: {
-    flex: 1,
-    color: "#fff",
-    backgroundColor: "#333",
-    padding: 10,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  addCategoryButton: {
-    backgroundColor: "#F4AB05",
-    padding: 10,
-    borderRadius: 8,
-  },
-  containerbtn:{
-    flexDirection:'row',
-    justifyContent:'space-between'
-  }
 });

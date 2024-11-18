@@ -29,141 +29,133 @@ const Drawer = createDrawerNavigator();
 
 function TabNavigator() {
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <Tab.Navigator
+            initialRouteName="Home"
+            screenOptions={{
+                tabBarActiveTintColor: '#F4AB05',
+                tabBarStyle: {
+                    backgroundColor: '#141d20',
+                    height: 72,
+                    paddingBottom: 9,
+                    paddingTop: 5,
+                    borderTopColor: '#3b3b3b',
+                    borderTopWidth: 0.3,
+                },
+                tabBarInactiveTintColor: 'gray',
+                headerShown: false,
+                tabBarLabelStyle: { fontSize: 12, paddingBottom: 4, fontFamily: 'figtree' },
+                tabBarHideOnKeyboard: true, // Tambahkan ini
+            }}
         >
-            <Tab.Navigator
-                initialRouteName="Home"
-                screenOptions={{
-                    tabBarActiveTintColor: '#F4AB05',
-                       tabBarStyle: {
-                        backgroundColor: '#141d20',
-                        height: 72,
-                        paddingBottom: 9,
-                        paddingTop: 5,
-                        borderTopColor: '#3b3b3b',
-                        borderTopWidth: 0.3
-                    },
-                    tabBarInactiveTintColor: 'gray',
-                    headerShown: false,
-                    tabBarLabelStyle: { fontSize: 12, paddingBottom: 4, fontFamily: 'figtree'},
+            <Tab.Screen
+                name="Days"
+                component={HomeScreen}
+                options={{
+                    tabBarIcon: ({ size, color }) => (
+                        <Icon name="bullseye" size={25} color={color} />
+                    ),
                 }}
-            >
-                <Tab.Screen
-                    name="Days"
-                    component={HomeScreen}
-                    options={{
-                        tabBarIcon: ({ size, color }) => (
-                            <Icon name="bullseye" size={25} color={color} />
-                        ),
-                    }}
-                />
-                <Tab.Screen
-                    name="All Task"
-                    component={TaskScreen}
-                    options={{
-                        tabBarIcon: ({ size, color }) => (
-                            <Icon name="tasks" size={20} color={color} />
-                        ),
-                    }}
-                />
-
-<Tab.Screen
-    name="CreateTask"
-    component={() => null} // Tidak ada komponen karena ini hanya tombol
-    options={{
-        tabBarIcon: ({ color }) => (
-            <Ionicons
-                name="add"
-                size={30}
-                color="#FFFFFF"
-                style={{ marginTop: 5 }}
             />
-        ),
-        tabBarLabel: "", // Menghilangkan teks di bawah ikon
-        tabBarButton: (props) => {
-            const navigation = useNavigation();  // Mengakses navigation dengan useNavigation()
-            const scaleValue = useRef(new Animated.Value(1)).current;
+            <Tab.Screen
+                name="All Task"
+                component={TaskScreen}
+                options={{
+                    tabBarIcon: ({ size, color }) => (
+                        <Icon name="tasks" size={20} color={color} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="CreateTask"
+                component={() => null}
+                options={{
+                    tabBarIcon: ({ color }) => (
+                        <Ionicons
+                            name="add"
+                            size={30}
+                            color="#FFFFFF"
+                            style={{ marginTop: 5 }}
+                        />
+                    ),
+                    tabBarLabel: "",
+                    tabBarButton: (props) => {
+                        const navigation = useNavigation();
+                        const scaleValue = useRef(new Animated.Value(1)).current;
 
-            const animateIn = () => {
-                Animated.spring(scaleValue, {
-                    toValue: 1.2,
-                    useNativeDriver: true,
-                }).start();
-            };
+                        const animateIn = () => {
+                            Animated.spring(scaleValue, {
+                                toValue: 1.2,
+                                useNativeDriver: true,
+                            }).start();
+                        };
 
-            const animateOut = () => {
-                Animated.spring(scaleValue, {
-                    toValue: 1,
-                    friction: 4, // Mengatur efek bouncing agar lebih halus
-                    useNativeDriver: true,
-                }).start();
-            };
+                        const animateOut = () => {
+                            Animated.spring(scaleValue, {
+                                toValue: 1,
+                                friction: 4,
+                                useNativeDriver: true,
+                            }).start();
+                        };
 
-
-            return (
-                <TouchableOpacity
-                    {...props}
-                    onPress={() => {
-                        animateIn();
-                        setTimeout(() => {
-                            animateOut();
-                            navigation.navigate('Note');
-                        }, 100); // Animasi kembali ke ukuran awal sebelum navigasi
-                    }}
-                    style={{
-                        top: -30,
-                        width: 60,
-                        height: 60,
-                        borderRadius: 30,
-                        backgroundColor: '#F4AB05',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 5,
-                        elevation: 5,
-                    }}
-                >
-                    <Animated.View style={{ transform: [{  scale: scaleValue }] }}>
-                    <Icon name="plus" size={20} color="#141d20" />
-                    </Animated.View>
-                </TouchableOpacity>
-            );
-        },
-    }}
-/>
-
-                <Tab.Screen
-                    name="Calendar"
-                    component={CalendarScreen}
-                    options={{
-                        tabBarIcon: ({ size, color }) => (
-                            <Ionicons name="calendar-clear-outline" size={21} color={color} />
-                        ),
-                    }}
-                />
-                <Tab.Screen
-                    name="Profile"
-                    component={ProfileScreen}
-                    options={{
-                        tabBarIcon: ({ size, color }) => (
-                            <Icon name="user" size={23} color={color} />
-                        ),
-                    }}
-                />
-                <Tab.Screen
-                    name="Note"
-                    component={Note}
-                    options={{
-                        tabBarButton: () => null,
-                    }}
-                />
-            </Tab.Navigator>
-        </KeyboardAvoidingView>
+                        return (
+                            <TouchableOpacity
+                                {...props}
+                                onPress={() => {
+                                    animateIn();
+                                    setTimeout(() => {
+                                        animateOut();
+                                        navigation.navigate('Note');
+                                    }, 100);
+                                }}
+                                style={{
+                                    top: -30,
+                                    width: 60,
+                                    height: 60,
+                                    borderRadius: 30,
+                                    backgroundColor: '#F4AB05',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 5,
+                                    elevation: 5,
+                                }}
+                            >
+                                <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+                                    <Icon name="plus" size={20} color="#141d20" />
+                                </Animated.View>
+                            </TouchableOpacity>
+                        );
+                    },
+                }}
+            />
+            <Tab.Screen
+                name="Calendar"
+                component={CalendarScreen}
+                options={{
+                    tabBarIcon: ({ size, color }) => (
+                        <Ionicons name="calendar-clear-outline" size={21} color={color} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{
+                    tabBarIcon: ({ size, color }) => (
+                        <Icon name="user" size={23} color={color} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Note"
+                component={Note}
+                options={{
+                    tabBarButton: () => null,
+                }}
+            />
+        </Tab.Navigator>
     );
 }
 
