@@ -1,16 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { FIREBASE_APP } from '../../FirebaseConfig';
+import React, { useState, useEffect } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Alert,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { FIREBASE_APP } from "../../FirebaseConfig";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
-const TaskDetailScreen = ({ route, navigation }) => {
-  const { taskId, canReschedule } = route.params;  // Get taskId and reschedule flag from route params
+const TaskDetailScreen = ({ route, navigation }: any) => {
+  const { taskId } = route.params;
   const [task, setTask] = useState(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);  // To control the visibility of DateTimePicker
-  const [newTime, setNewTime] = useState(new Date());  // State to hold the selected time
-  const [timeSet, setTimeSet] = useState(false);  // To track whether the time has been updated
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [reminderTime, setReminderTime] = useState("");
+  const [categories, setCategories] = useState(["Personal", "Work", "Events"]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+
+  // Show and hide date picker
+  const showDatePicker = () => setDatePickerVisibility(true);
+  const hideDatePicker = () => setDatePickerVisibility(false);
+
+  // Handle date picker confirmation
+  const handleConfirm = (date: Date) => {
+    setReminderTime(
+      `${date.toLocaleDateString("en-GB")} ${date.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    );
+    hideDatePicker();
+  };
 
   useEffect(() => {
     const fetchTaskDetail = async () => {
@@ -18,7 +45,7 @@ const TaskDetailScreen = ({ route, navigation }) => {
       const userId = auth.currentUser?.uid;
 
       if (!userId) {
-        console.error('User not logged in');
+        console.error("User not logged in");
         return;
       }
 
@@ -27,147 +54,137 @@ const TaskDetailScreen = ({ route, navigation }) => {
       const taskSnap = await getDoc(taskRef);
 
       if (taskSnap.exists()) {
-        setTask(taskSnap.data());
+        const data = taskSnap.data();
+        setTask(data);
+        setTitle(data.title);
+        setDescription(data.description || "");
+        setReminderTime(data.time || "No time set");
+        setSelectedCategory(data.category || "Personal"); // Set default selected category
       } else {
-        console.log('No such task!');
+        console.error("No such task!");
       }
     };
 
     fetchTaskDetail();
   }, [taskId]);
 
-  // Function to format time to HH:mm
-  const formatTime = (date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    return `${hours}:${minutes < 10 ? '0' : ''}${minutes}`;  // Format as HH:mm
-  };
-
-  // Function to handle rescheduling the task
-  const handleReschedule = async () => {
-    if (!task) return;
-
-    // Format the new time as string
-    const formattedTime = formatTime(newTime);  // Use the formatTime function to format the time
-
-    const db = getFirestore(FIREBASE_APP);
+  const handleUpdateTask = async () => {
     const auth = getAuth();
     const userId = auth.currentUser?.uid;
-    const taskRef = doc(db, `users/${userId}/notes`, taskId);
+
+    if (!userId) {
+      console.error("User not logged in");
+      return;
+    }
 
     try {
+      const db = getFirestore(FIREBASE_APP);
+      const taskRef = doc(db, `users/${userId}/notes`, taskId);
+
       await updateDoc(taskRef, {
-        completed: false,  // Reset completed status
-        time: formattedTime,  // Update task time
+        title,
+        description,
+        time: reminderTime || "No time set",
+        category: selectedCategory,
       });
 
-      // Update local state to reflect the new time
-      setTask(prevTask => ({
-        ...prevTask,
-        completed: false,
-        time: formattedTime,
-      }));
-
-      setTimeSet(true);  // Mark time as set
-      Alert.alert('Task Rescheduled', `Your task has been rescheduled to ${formattedTime}`);
+      Alert.alert("Success", "Task updated successfully!");
+      navigation.goBack();
     } catch (error) {
-      console.error('Error rescheduling task:', error);
-      Alert.alert('Error', 'There was an issue rescheduling the task.');
-    }
-
-    // Hide the DateTimePicker after saving
-    setShowDatePicker(false);  
-  };
-
-  // Function to handle canceling the time change
-  const handleCancel = () => {
-    setShowDatePicker(false);  // Hide the DateTimePicker without making any changes
-    setNewTime(new Date());  // Reset the selected time to the original task time
-  };
-
-  // Function to handle the change in time
-  const handleTimeChange = (event, selectedDate) => {
-    if (event.type === 'set') {
-      // If a new date is set, update the time
-      setNewTime(selectedDate || newTime);
-      setShowDatePicker(false); // Close the picker once the time is set
-    }
-    if (event.type === 'dismissed') {
-      // If the user dismisses the picker, close it
-      setShowDatePicker(false);
+      console.error("Error updating task:", error);
+      Alert.alert("Error", "Failed to update task");
     }
   };
 
   if (!task) {
     return (
       <View style={styles.container}>
-        <Text>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{task.title}</Text>
-      <Text style={styles.category}>Category: {task.category}</Text>
-      <Text style={styles.time}>Time: {task.time}</Text>
-      <Text style={styles.description}>Description: {task.description || 'No description provided'}</Text>
+      {/* Input Title */}
+      <View style={styles.judul}>
+        <Text style={styles.textJudul}>Judul</Text>
+        <TextInput
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Ketikan sesuatu disini"
+          placeholderTextColor="#fff"
+          style={{ color: "#fff" }}
+        />
+      </View>
+      {/* Divider */}
+      <View style={styles.divider} />
 
-      {/* Show "Reschedule" option only if the task is completed and time is not set yet */}
-      {canReschedule && task.completed && !timeSet && (
-        <View>
-          <TouchableOpacity
-            style={styles.rescheduleButton}
-            onPress={() => setShowDatePicker(true)}  // Show DateTimePicker
-          >
-            <Text style={styles.rescheduleText}>Reschedule Task</Text>
-          </TouchableOpacity>
+      {/* Input Description */}
+      <View style={styles.container2}>
+        <ScrollView>
+          <TextInput
+            style={styles.formDeskripsi}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Ketikan sesuatu disini"
+            placeholderTextColor="#fff"
+            multiline
+          />
+        </ScrollView>
 
-          {/* Show DateTimePicker if showDatePicker is true */}
-          {showDatePicker && (
-            <DateTimePicker
-              value={newTime}
-              mode="time"
-              is24Hour={true}
-              onChange={handleTimeChange}  // Handle time change and cancellation
-            />
-          )}
+        {/* Reminder and Categories */}
+        <View style={styles.containerPengingat}>
+          <View style={styles.containerbtn}>
+            {/* Reminder Time Button */}
+            <TouchableOpacity
+              style={styles.buttonPengingat}
+              onPress={showDatePicker}
+            >
+              <Ionicons name="alarm-outline" size={25} color="#fff" />
+              <Text style={{ color: "#fff" }}>Pengingat</Text>
+            </TouchableOpacity>
+            {/* Update Task Button */}
+            <TouchableOpacity style={styles.check} onPress={handleUpdateTask}>
+              <Ionicons name="checkmark-outline" size={25} color="#fff" />
+            </TouchableOpacity>
+          </View>
 
-          {/* Show "Save New Time" button only if DateTimePicker is shown */}
-          {showDatePicker && (
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleReschedule}  // Save the new time and hide the picker
-              >
-                <Text style={styles.saveText}>Save New Time</Text>
-              </TouchableOpacity>
-
-              {/* Cancel Button */}
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancel}  // Cancel the operation and hide the picker
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
+          {/* Display Categories */}
+          <View style={styles.categorySection}>
+            <Text style={styles.sectionTitle}>Pilih Kategori:</Text>
+            <View style={styles.categoryRow}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category}
+                  style={[
+                    styles.categoryButton,
+                    selectedCategory === category && styles.selectedCategoryButton,
+                  ]}
+                  onPress={() => setSelectedCategory(category)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      selectedCategory === category && styles.selectedCategoryText,
+                    ]}
+                  >
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          )}
+          </View>
         </View>
-      )}
+      </View>
 
-      {/* If the time is set, display a message that the task has been rescheduled */}
-      {timeSet && (
-        <View style={styles.rescheduledMessage}>
-          <Text style={styles.rescheduledText}>Task has been successfully rescheduled!</Text>
-        </View>
-      )}
-
-      <TouchableOpacity
-        style={styles.goBackButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.goBackText}>Go Back</Text>
-      </TouchableOpacity>
+      {/* DateTime Picker Modal */}
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="datetime"
+        onConfirm={handleConfirm}
+        onCancel={hideDatePicker}
+      />
     </View>
   );
 };
@@ -176,74 +193,144 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f4f4f4',
+    backgroundColor: '#121212',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  category: {
-    fontSize: 18,
-    marginTop: 10,
-  },
-  time: {
-    fontSize: 16,
-    marginTop: 5,
-  },
-  description: {
-    fontSize: 14,
-    marginTop: 10,
-  },
-  rescheduleButton: {
-    backgroundColor: '#ffab00',
-    padding: 12,
-    marginTop: 20,
-    borderRadius: 5,
-  },
-  rescheduleText: {
+  label: {
     color: '#fff',
     fontSize: 18,
-    textAlign: 'center',
+    marginBottom: 8,
   },
-  saveButton: {
+  input: {
+    backgroundColor: '#1e1e1e',
+    color: '#fff',
+    fontSize: 16,
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  timePickerButton: {
+    backgroundColor: '#1e1e1e',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+  },
+  timePickerText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  pickerContainer: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: 5,
+    marginBottom: 15,
+  },
+  picker: {
+    color: '#fff',
+  },
+  updateButton: {
     backgroundColor: '#4CAF50',
     padding: 12,
-    marginTop: 10,
     borderRadius: 5,
+    marginTop: 20,
   },
-  cancelButton: {
-    backgroundColor: '#f44336',
-    padding: 12,
-    marginTop: 10,
-    borderRadius: 5,
-  },
-  saveText: {
-    color: '#fff',
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  cancelText: {
+  updateButtonText: {
     color: '#fff',
     fontSize: 18,
     textAlign: 'center',
   },
   goBackButton: {
-    backgroundColor: '#ddd',
+    backgroundColor: '#444',
     padding: 12,
-    marginTop: 20,
     borderRadius: 5,
+    marginTop: 20,
   },
   goBackText: {
-    textAlign: 'center',
+    color: '#fff',
     fontSize: 18,
+    textAlign: 'center',
   },
-  rescheduledMessage: {
+  loadingText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  judul: {
+    paddingTop: 30,
+    borderRadius: 30,
+    marginTop: 30,
+  },
+  textJudul: {
+    fontWeight: "bold",
+    fontSize: 20,
+    color: "#fff",
+    marginBottom: 6,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#444",
+    marginVertical: 10,
+  },
+  container2: {
+    height: 700,
+    marginTop: 10,
+    borderRadius: 30,
+  },
+  formDeskripsi: {
+    color: "#fff",
+    marginBottom: 20,
+  },
+  containerPengingat: {
+    marginBottom: 20,
+  },
+  buttonPengingat: {
+    backgroundColor: "#F4AB05",
+    borderRadius: 30,
+    paddingVertical: 7,
+    paddingHorizontal: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+  containerbtn: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  check: {
+    backgroundColor: "#F4AB05",
+    borderRadius: 50,
+    padding: 7,
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categorySection: {
     marginTop: 20,
+    marginBottom:30,
   },
-  rescheduledText: {
-    fontSize: 18,
-    color: '#4CAF50',
-    textAlign: 'center',
+  sectionTitle: {
+    color: "#fff",
+    marginBottom: 10,
+    fontWeight: "bold",
+  },
+  categoryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  categoryButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#444",
+    marginBottom: 5,
+    minWidth: "30%",
+    alignItems: "center",
+  },
+  selectedCategoryButton: {
+    backgroundColor: "#F4AB05",
   },
 });
 

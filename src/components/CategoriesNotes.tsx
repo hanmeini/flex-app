@@ -12,6 +12,7 @@ import { getAuth } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+
 const parseTime = (time) => {
     const [hours, minutes] = time.split(' ')[0].split(':').map(num => parseInt(num));
     const isPM = time.includes('PM');
@@ -129,7 +130,7 @@ const CategoryNotes = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1A2529',
+        backgroundColor: '#141d20',
         paddingHorizontal: 15,
         paddingTop: 60,
     },

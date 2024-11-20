@@ -81,6 +81,9 @@ const Profile = ({ navigation }: { navigation: any }) => {
         setLoading(false);
       }
     };
+    
+    
+
     fetchUserData();
   }, []);
 

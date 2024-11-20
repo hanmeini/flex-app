@@ -12,11 +12,13 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
+import { useNavigation } from '@react-navigation/native';
 
 const CustomCalendar = () => {
     const [notes, setNotes] = useState<any[]>([]);
     const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const navigation = useNavigation();
 
     // Ambil data dari Firestore
     useEffect(() => {
@@ -135,29 +137,32 @@ const CustomCalendar = () => {
                     <View key={day}>
                         <Text style={styles.groupTitle}>{day}</Text>
                         {taskGroup[day].map((item:any) => (
-                            <View style={styles.taskCard} key={item.id}>
-                                <View style={styles.indicator} />
-                                <View style={styles.taskContent}>
-                                    <Text style={styles.taskTitle}>{item.title}</Text>
-                                    <View style={styles.timeCategoryContainer}>
-                                        <Text style={{ color:'#fff' }}>{day}</Text>
-                                        <View style={styles.separatorLine} />
-                                        <Text style={styles.taskTime}>{item.time}</Text>
-                                        <View style={styles.separatorLine} />
-                                        <View style={styles.categoryContainer}>
-                                            <MaterialCommunityIcons
-                                                name="folder"
-                                                size={16}
-                                                color="#fff"
-                                            />
-                                            <Text style={styles.categoryText}>
-                                                {item.category || "No Category"}
-                                            </Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}>
+                                <View style={styles.taskCard} key={item.id}>
+                                    <View style={styles.indicator} />
+                                    <View style={styles.taskContent}>
+                                        <Text style={styles.taskTitle}>{item.title}</Text>
+                                        <View style={styles.timeCategoryContainer}>
+                                            <Text style={{ color:'#fff' }}>{day}</Text>
+                                            <View style={styles.separatorLine} />
+                                            <Text style={styles.taskTime}>{item.time}</Text>
+                                            <View style={styles.separatorLine} />
+                                            <View style={styles.categoryContainer}>
+                                                <MaterialCommunityIcons
+                                                    name="folder"
+                                                    size={16}
+                                                    color="#fff"
+                                                />
+                                                <Text style={styles.categoryText}>
+                                                    {item.category || "No Category"}
+                                                </Text>
+                                            </View>
                                         </View>
                                     </View>
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                         ))}
+                        <View style={styles.divider} />
                     </View>
                 ))}
             </View>
@@ -209,7 +214,7 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 2,
-        backgroundColor: '#DADADA',
+        backgroundColor: '#444',
         marginVertical: 10,
     },
     containerReminder: {
