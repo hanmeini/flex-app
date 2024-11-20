@@ -81,9 +81,6 @@ const Profile = ({ navigation }: { navigation: any }) => {
         setLoading(false);
       }
     };
-    
-    
-
     fetchUserData();
   }, []);
 
@@ -136,7 +133,7 @@ const Profile = ({ navigation }: { navigation: any }) => {
         />
         <View>
           <Text style={styles.namaText}>
-            {userData?.email || 'Nama Tidak Ditemukan'}
+            {userData?.fullName || 'Nama Tidak Ditemukan'}
           </Text>
         </View>
       </TouchableOpacity>
