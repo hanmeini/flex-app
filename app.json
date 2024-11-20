@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Flexido",
+    "slug": "Flexido",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/flexido.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/splashscreen.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A2529"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
