@@ -11,11 +11,8 @@ import {
 import { getAuth } from 'firebase/auth';
 import {
   getFirestore,
-  doc,
-  getDoc,
   collection,
   getDocs,
-  setDoc,
 } from 'firebase/firestore';
 import { FIREBASE_APP } from '../../FirebaseConfig';
 import { Picker } from '@react-native-picker/picker';
@@ -39,28 +36,24 @@ const Profile = ({ navigation }: { navigation: any }) => {
       try {
         const auth = getAuth();
         const user = auth.currentUser;
-    
+
         if (user) {
           const userId = user.uid;
-    
-          // Ambil data notes
           const tasksRef = collection(db, `users/${userId}/notes`);
           const tasksSnap = await getDocs(tasksRef);
-    
-          // Transformasi data dari Firestore
+
           const allTasks = tasksSnap.docs.map((doc) => {
             const data = doc.data();
             return {
               id: doc.id,
               title: data?.title || 'Tidak Ada Judul',
               description: data?.description || 'Tidak Ada Deskripsi',
-              time: data?.time && typeof data.time.toDate === 'function' ? data.time.toDate() : null,
+              time: data?.time && data.time.toDate ? data.time.toDate() : null, // Pastikan `toDate` hanya dipanggil jika ada
               category: data?.category || 'Tidak Ada Kategori',
               completed: data?.completed || false,
             };
           });
-    
-          // Filter data ke dalam kategori
+
           const completedTasks = allTasks.filter((task) => task.completed);
           const inProgressTasks = allTasks.filter(
             (task) => !task.completed && task.time && task.time < new Date()
@@ -68,7 +61,7 @@ const Profile = ({ navigation }: { navigation: any }) => {
           const upcomingTasks = allTasks.filter(
             (task) => task.time && task.time >= new Date()
           );
-    
+
           setTasks({
             completed: completedTasks,
             inProgress: inProgressTasks,
@@ -81,8 +74,6 @@ const Profile = ({ navigation }: { navigation: any }) => {
         setLoading(false);
       }
     };
-    
-    
 
     fetchUserData();
   }, []);
@@ -111,7 +102,6 @@ const Profile = ({ navigation }: { navigation: any }) => {
     );
   }
 
-  // Calculate progress dynamically
   const totalTasks = tasks.completed.length + tasks.inProgress.length;
   const completionProgress = totalTasks
     ? tasks.completed.length / totalTasks
@@ -161,8 +151,8 @@ const Profile = ({ navigation }: { navigation: any }) => {
         />
       </View>
 
-      <View style={styles.upcomingContainer}>
-        <Text style={styles.upcomingTitle}>Daftar Notes</Text>
+      <View style={styles.upcomingDropdownContainer}>
+        <Text style={styles.dropdownLabel}>Filter Tugas:</Text>
         <Picker
           selectedValue={selectedFilter}
           style={styles.picker}
@@ -173,37 +163,28 @@ const Profile = ({ navigation }: { navigation: any }) => {
           <Picker.Item label="Dalam 30 hari" value="Dalam 30 hari" />
         </Picker>
 
-        {filterUpcomingTasks().map((note) => (
-  <View key={note.id} style={styles.taskCard}>
-    <View
-      style={[
-        styles.indicator,
-        { backgroundColor: note.completed ? '#4caf50' : '#ff9800' },
-      ]}
-    />
-    <View style={styles.taskContent}>
-      <Text style={styles.taskTitle}>
-        {note.title || 'Judul Tidak Ada'}
-      </Text>
-      <Text style={styles.taskDate}>
-        {note.time
-          ? new Date(note.time).toLocaleDateString('id-ID', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            })
-          : 'Tidak Ada Tanggal'}
-      </Text>
-      <Text style={styles.taskDescription}>
-        {note.description || 'Deskripsi tidak tersedia'}
-      </Text>
-      <Text style={styles.taskCategory}>
-        Kategori: {note.category || 'Tidak ada kategori'}
-      </Text>
-    </View>
-  </View>
-))}
-
+        {selectedFilter !== 'Semua' && (
+          <View style={styles.filteredTasksContainer}>
+            <Text style={styles.filteredTasksTitle}>
+              {selectedFilter === 'Dalam 7 hari'
+                ? 'Tugas dalam 7 Hari'
+                : 'Tugas dalam 30 Hari'}
+            </Text>
+            {filterUpcomingTasks().length > 0 ? (
+              filterUpcomingTasks().map((task) => (
+                <View key={task.id} style={styles.taskCard}>
+                  <Text style={styles.taskTitle}>{task.title}</Text>
+                  <Text style={styles.taskDate}>
+                    {task.time?.toLocaleDateString('id-ID') || 'Tidak ada tanggal'}
+                  </Text>
+                  <Text style={styles.taskDescription}>{task.description}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noTasksText}>Tidak ada tugas ditemukan.</Text>
+            )}
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -349,5 +330,42 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'left',
+  },
+  upcomingDropdownContainer: {
+    backgroundColor: '#f0f0f0',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  dropdownLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  filteredTasksContainer: {
+    marginTop: 10,
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filteredTasksTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  taskDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },  
+  noTasksText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginVertical: 10,
   },
 });
