@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   registerButton: {
     width: "100%",
     height: 50,
-    backgroundColor: "#F4AB05",
+    backgroundColor: "#Ffd118",
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   registerLink: {
-    color: "#F4AB05",
+    color: "#ffd118",
     fontFamily: "figtree-semibold",
   },
   orContainer: {

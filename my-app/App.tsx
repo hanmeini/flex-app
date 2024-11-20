@@ -22,7 +22,7 @@ export default function App() {
   }, []);
 
   if (!fontsLoaded) {
-      return null; // Or you can show a loading indicator here
+      return null; // Or you can show npx a loading indicator here
   }
   return <AppNavigator />;
 }

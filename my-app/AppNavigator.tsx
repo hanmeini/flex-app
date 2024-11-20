@@ -32,7 +32,7 @@ function TabNavigator() {
         <Tab.Navigator
             initialRouteName="Home"
             screenOptions={{
-                tabBarActiveTintColor: '#F4AB05',
+                tabBarActiveTintColor: '#Ffd118',
                 tabBarStyle: {
                     backgroundColor: '#141d20',
                     height: 72,
@@ -112,7 +112,7 @@ function TabNavigator() {
                                     width: 60,
                                     height: 60,
                                     borderRadius: 30,
-                                    backgroundColor: '#F4AB05',
+                                    backgroundColor: '#Ffd118',
                                     justifyContent: 'center',
                                     alignItems: 'center',
                                     shadowColor: '#000',
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
         marginVertical: 5,
     },
     activeBackground: {
-        backgroundColor: '#F4AB05',
+        backgroundColor: '#ffd118',
         borderRadius: 10,
     },
     drawerLabel: {
@@ -287,6 +287,6 @@ const styles = StyleSheet.create({
     },
     activeLabel: {
         fontWeight: 'bold',
-        color: '#F4AB05',
+        color: '#Ffd118',
     },
 });

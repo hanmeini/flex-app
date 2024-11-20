@@ -1,63 +1,51 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Dimensions, ScrollView } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
-import { Picker } from '@react-native-picker/picker'; // Mengimpor dari @react-native-picker/picker
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { SearchBar } from '@rneui/themed'; 
 import { ProgressBar } from 'react-native-paper';
-import { PieChartProps } from 'react-native-chart-kit/dist/PieChart';
+import { Picker } from '@react-native-picker/picker';
 
-const Profile = ({navigation}:any) => {
-  const [selectedDay, setSelectedDay] = useState("Hari Ini"); 
+const Profile = () => {
+  const [tasks, setTasks] = useState([
+    { id: 1, title: 'Tugas 1', status: 'selesai' },
+    { id: 2, title: 'Tugas 2', status: 'tertunda' },
+    { id: 3, title: 'Tugas 3', status: 'belum selesai' },
+    { id: 4, title: 'Tugas 4', status: 'selesai' },
+  ]);
+  const [selectedDay, setSelectedDay] = useState("Hari Ini");
+
+  const completedTasks = tasks.filter(task => task.status === 'selesai').length;
+  const pendingTasks = tasks.filter(task => task.status === 'tertunda').length;
+  const incompleteTasks = tasks.filter(task => task.status === 'belum selesai').length;
 
   return (
     <ScrollView style={styles.container}>
-      {/* Profil Section */}
+
       <View style={styles.profileContainer}>
-          <Image 
-            source={require('../../assets/images/WhatsApp Image 2024-09-02 at 11.13.35.jpeg')}
-            style={styles.profileImage} />
-          <Text style={styles.namaText}>Mikhael Kelvian</Text>
+    
+        <Text style={styles.namaText}>Mikhael Kelvian</Text>
       </View>
 
       {/* Ringkasan Tugas */}
       <Text style={styles.summaryText}>Ringkasan Tugas</Text>
-
-      {/* Kotak Tugas */}
       <View style={styles.taskSummaryContainer}>
-        {/* Tugas Selesai */}
         <View style={styles.taskBox}>
-          <Text style={styles.taskNumber}>0</Text>
+          <Text style={styles.taskNumber}>{completedTasks}</Text>
           <Text style={styles.taskLabel}>Tugas Selesai</Text>
         </View>
-
-        {/* Tugas Tertunda */}
         <View style={styles.taskBox}>
-          <Text style={styles.taskNumber}>0</Text>
+          <Text style={styles.taskNumber}>{pendingTasks}</Text>
           <Text style={styles.taskLabel}>Tugas Tertunda</Text>
         </View>
       </View>
 
-      {/* Kotak Chart Section */}
+      {/* Chart Section */}
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Penyelesaian Tugas Harian</Text>
-        <View>
-          <Text style={styles.textstatus}>Belum selesai</Text>
-          <ProgressBar  progress={0.5} color="#D27D3D" style={styles.full}/>
-          <Text style={styles.textstatus}>Tugas Tertunda</Text>
-          <ProgressBar  progress={0.8} color="#1F5EAD" style={styles.full}/>
-          <Text style={styles.textstatus}>Selesai</Text>
-          <ProgressBar  progress={0.3} color="#63A133" style={styles.full}/>
-        </View>
-      </View>
-
-      {/* Tugas dalam 7 hari kedepan */}
-      <View style={styles.dayContainer}>
-        <Text style={styles.dayText}>Tugas dalam 7 hari kedepan</Text>
-      </View>
-
-      <View style={{justifyContent:'center', alignItems:'center', flex:1}}>
+        <Text style={styles.textstatus}>Belum selesai</Text>
+        <ProgressBar progress={incompleteTasks / tasks.length} color="#D27D3D" style={styles.full} />
+        <Text style={styles.textstatus}>Tugas Tertunda</Text>
+        <ProgressBar progress={pendingTasks / tasks.length} color="#1F5EAD" style={styles.full} />
+        <Text style={styles.textstatus}>Selesai</Text>
+        <ProgressBar progress={completedTasks / tasks.length} color="#63A133" style={styles.full} />
       </View>
 
       {/* Tugas yang belum selesai */}
@@ -74,9 +62,10 @@ const Profile = ({navigation}:any) => {
             <Picker.Item label="Semua" value="Semua" />
           </Picker>
         </View>
-        {/* Placeholder untuk menambahkan data */}
         <View style={styles.yetTaskContent}>
-          <Text>Data tugas yang belum selesai akan ditampilkan di sini.</Text>
+          {tasks.filter(task => task.status === 'belum selesai').map(task => (
+            <Text key={task.id}>{task.title}</Text>
+          ))}
         </View>
       </View>
     </ScrollView>
@@ -84,6 +73,8 @@ const Profile = ({navigation}:any) => {
 };
 
 export default Profile;
+
+
 
 const styles = StyleSheet.create({
   container: {

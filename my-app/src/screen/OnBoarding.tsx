@@ -6,13 +6,13 @@ const { width } = Dimensions.get('window');
 
 const data = [
   {
-    image: require('../../assets/images/1.png'),
+    image: require('../../assets/images/1.jpg'),
   },
   {
-    image: require('../../assets/images/2.png'),
+    image: require('../../assets/images/2.jpg'),
   },
   {
-    image: require('../../assets/images/3.png'),
+    image: require('../../assets/images/3.jpg'),
   },
 ];
 
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   activeDot: {
-    backgroundColor: '#fbab05',
+    backgroundColor: '#ffd118',
     width: 35,
     height: 4,
     borderRadius: 3,
@@ -121,13 +121,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#f4ab05',
+    borderColor: '#ffd118',
     paddingHorizontal: 45,
     borderRadius: 10,
     
   },
   loginButton: {
-    backgroundColor: '#f4ab05',
+    backgroundColor: '#ffd118',
     paddingVertical: 14,
     paddingHorizontal: 45,
     borderRadius: 10,
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   buttonText2: {
     fontSize: 18,
-    color: '#f4ab05',
+    color: '#ffd118',
     fontFamily: 'figtree-semibold',
   },
 

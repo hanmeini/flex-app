@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   loginButton: {
     width: '100%',
     height: 50,
-    backgroundColor: '#F4AB05',
+    backgroundColor: '#Ffd118',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     fontFamily: 'figtree-semibold',
   },
   registerLink: {
-    color: '#F4AB05',
+    color: '#Ffd118',
     fontFamily: 'figtree-semibold',
     fontWeight: 'bold',
   },
