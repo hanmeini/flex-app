@@ -9,10 +9,10 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 const TaskDetailScreen = ({ route, navigation }: any) => {
   const { taskId } = route.params;
@@ -59,7 +59,7 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
         setTitle(data.title);
         setDescription(data.description || "");
         setReminderTime(data.time || "No time set");
-        setSelectedCategory(data.category || "Personal"); // Set default selected category
+        setSelectedCategory(data.category || "Personal");
       } else {
         console.error("No such task!");
       }
@@ -159,14 +159,16 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
                   key={category}
                   style={[
                     styles.categoryButton,
-                    selectedCategory === category && styles.selectedCategoryButton,
+                    selectedCategory === category &&
+                      styles.selectedCategoryButton,
                   ]}
                   onPress={() => setSelectedCategory(category)}
                 >
                   <Text
                     style={[
                       styles.categoryText,
-                      selectedCategory === category && styles.selectedCategoryText,
+                      selectedCategory === category &&
+                        styles.selectedCategoryText,
                     ]}
                   >
                     {category}
@@ -189,73 +191,14 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
   );
 };
 
+export default TaskDetailScreen;
+
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: "#141d20",
     flex: 1,
-    padding: 20,
-    backgroundColor: '#121212',
-  },
-  label: {
-    color: '#fff',
-    fontSize: 18,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#1e1e1e',
-    color: '#fff',
-    fontSize: 16,
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 15,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  timePickerButton: {
-    backgroundColor: '#1e1e1e',
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 15,
-  },
-  timePickerText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  pickerContainer: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 5,
-    marginBottom: 15,
-  },
-  picker: {
-    color: '#fff',
-  },
-  updateButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 5,
-    marginTop: 20,
-  },
-  updateButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  goBackButton: {
-    backgroundColor: '#444',
-    padding: 12,
-    borderRadius: 5,
-    marginTop: 20,
-  },
-  goBackText: {
-    color: '#fff',
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  loadingText: {
-    color: '#fff',
-    fontSize: 18,
-    textAlign: 'center',
+    paddingHorizontal: 30,
+    paddingTop: 10,
   },
   judul: {
     paddingTop: 30,
@@ -294,10 +237,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
   },
-  containerbtn: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
   check: {
     backgroundColor: "#F4AB05",
     borderRadius: 50,
@@ -332,6 +271,14 @@ const styles = StyleSheet.create({
   selectedCategoryButton: {
     backgroundColor: "#F4AB05",
   },
+  categoryText: {
+    color: "#fff",
+  },
+  selectedCategoryText: {
+    color: "#000",
+  },
+  containerbtn: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
 });
-
-export default TaskDetailScreen;

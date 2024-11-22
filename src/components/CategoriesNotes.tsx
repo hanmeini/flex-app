@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import {
     getFirestore,
@@ -12,14 +12,13 @@ import { getAuth } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-
 const parseTime = (time) => {
     const [hours, minutes] = time.split(' ')[0].split(':').map(num => parseInt(num));
     const isPM = time.includes('PM');
     return isPM ? (hours % 12 + 12) * 60 + minutes : hours * 60 + minutes;
 };
 
-const CategoryNotes = () => {
+const CategoryNotes = ({ navigation }) => { // Added navigation prop
     const route = useRoute();
     const { category } = route.params; // Parameter kategori dari navigasi
     const [notes, setNotes] = useState([]);
@@ -78,7 +77,10 @@ const CategoryNotes = () => {
             : '#FF6B6B';
 
         return (
-            <View style={styles.taskCard}>
+            <TouchableOpacity 
+                onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })} // Navigate to TaskDetail
+                style={styles.taskCard}
+            >
                 <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
                 <View style={styles.taskContent}>
                     <Text style={[styles.taskTitle, item.completed && { textDecorationLine: 'line-through', color: '#999' }]}>
@@ -93,7 +95,7 @@ const CategoryNotes = () => {
                         </View>
                     </View>
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
@@ -104,10 +106,7 @@ const CategoryNotes = () => {
                 {filters.map((filter) => (
                     <Text
                         key={filter}
-                        style={[
-                            styles.filterTab,
-                            selectedFilter === filter && styles.activeFilterTab,
-                        ]}
+                        style={[styles.filterTab, selectedFilter === filter && styles.activeFilterTab]}
                         onPress={() => setSelectedFilter(filter)}
                     >
                         {filter}
@@ -130,7 +129,7 @@ const CategoryNotes = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#141d20',
+        backgroundColor: '#1A2529',
         paddingHorizontal: 15,
         paddingTop: 60,
     },

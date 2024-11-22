@@ -1,58 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+} from 'react-native';
 import { getAuth, updateProfile } from 'firebase/auth';
 import { doc, setDoc, getFirestore, getDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 
-const EditProfile = ({ route, navigation }) => {
+const EditProfile = ({ route, navigation }: any) => {
   const { userData } = route.params;
   const [fullName, setFullName] = useState(userData?.fullName || '');
   const [photoURL, setPhotoURL] = useState(userData?.photoURL || '');
-  const [dob, setDob] = useState(userData?.dob || ''); // Tanggal lahir
-  const [phone, setPhone] = useState(userData?.phone || ''); // Nomor telepon
+  const [dob, setDob] = useState(userData?.dob || '');
+  const [phone, setPhone] = useState(userData?.phone || '');
+  const [loading, setLoading] = useState(false);
 
-  // Menyimpan data ke Firestore dan memperbarui Auth
-  const handleSave = async () => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (user) {
-        const firestore = getFirestore();
-        const profileRef = doc(firestore, `users/${user.uid}/profile`, 'profileInfo');
-
-        // Update Firebase Auth (opsional, jika ingin menyinkronkan displayName dan photoURL)
-        await updateProfile(user, { displayName: fullName, photoURL });
-
-        // Update Firestore di koleksi users/{userId}/profile/profileInfo
-        await setDoc(profileRef, {
-          fullName,
-          photoURL,
-          dob,
-          phone,
-        });
-
-        alert('Profil berhasil diperbarui!');
-        // Setelah berhasil disimpan, kita perbarui data profil di input
-        navigation.navigate('Profile'); // Navigasi ke halaman Profile
-      }
-    } catch (error) {
-      alert('Gagal memperbarui profil: ' + error.message);
-    }
-  };
-
-  // Logout fungsi
-  const handleLogout = async () => {
-    try {
-      const auth = getAuth();
-      await auth.signOut();
-      navigation.replace('Login'); // Navigasi ke halaman Login setelah logout
-    } catch (error) {
-      alert('Gagal logout: ' + error.message);
-    }
-  };
+  const auth = getAuth();
+  const firestore = getFirestore();
+  const user = auth.currentUser;
 
   // Fungsi untuk mengambil gambar dari galeri
   const pickImage = async () => {
@@ -68,12 +40,16 @@ const EditProfile = ({ route, navigation }) => {
     }
   };
 
-  // Menampilkan data profil yang sudah disimpan dari Firestore
+  // Fungsi mengambil data profil dari Firestore
   const fetchUserProfile = async () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (user) {
-      const firestore = getFirestore();
+    if (!user) {
+      Alert.alert('Error', 'User not logged in');
+      navigation.replace('Login');
+      return;
+    }
+
+    setLoading(true);
+    try {
       const profileRef = doc(firestore, `users/${user.uid}/profile`, 'profileInfo');
       const docSnap = await getDoc(profileRef);
 
@@ -84,15 +60,67 @@ const EditProfile = ({ route, navigation }) => {
         setDob(profileData.dob);
         setPhone(profileData.phone);
       } else {
-        console.log('Tidak ada data profil!');
+        console.log('No profile data found');
       }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      Alert.alert('Error', 'Failed to fetch profile data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Load data profil saat komponen pertama kali dimuat
   useEffect(() => {
     fetchUserProfile();
   }, []);
+
+  // Menyimpan data ke Firestore dan memperbarui Auth
+  const handleSave = async () => {
+    if (!user) {
+      Alert.alert('Error', 'User not logged in');
+      navigation.replace('Login');
+      return;
+    }
+
+    try {
+      const profileRef = doc(firestore, `users/${user.uid}/profile/8Js4h1TvZBMGR6MngvLg`);
+
+      // Update Firebase Auth
+      await updateProfile(user, { displayName: fullName, photoURL });
+
+      // Update Firestore
+      await setDoc(profileRef, {
+        fullName,
+        photoURL,
+        dob,
+        phone,
+      });
+
+      Alert.alert('Success', 'Profile updated successfully!');
+      navigation.navigate('Profile');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'Failed to update profile');
+    }
+  };
+
+  // Fungsi logout
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      navigation.replace('Login');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to logout: ' + error.message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: '#fff' }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

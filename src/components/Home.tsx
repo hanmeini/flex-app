@@ -29,25 +29,22 @@ const HomeScreen = () => {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [expandedGroups, setExpandedGroups] = useState({
     overdue: false,
-    completed: false,
-    upcoming: false,
+    todayTasks: false,
+    completedToday: false,
   });
 
   const navigation = useNavigation();  
 
   const handleTaskPress = (taskId: any, completed: undefined) => {   
     if (completed) {
-      // Jika tugas sudah selesai, beri opsi untuk mereschedule
       navigation.navigate('TaskDetail', { taskId, canReschedule: true });
     } else {
-      // Jika tugas belum selesai, arahkan ke detail task
       navigation.navigate('TaskDetail', { taskId, canReschedule: false });
     }
   };
-  // Filters untuk kategori
+
   const filters = ['All', 'Personal', 'Work', 'Events'];
 
-  // Ambil data dari Firestore
   useEffect(() => {
     const auth = getAuth();
     const userId = auth.currentUser?.uid;
@@ -75,8 +72,8 @@ const HomeScreen = () => {
   // Waktu saat ini (dalam format menit)
   const currentTime = new Date();
   const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+  const currentDay = currentTime.getDate();
 
-  // Filter tugas berdasarkan kategori dan pencarian
   const filterTasks = () => {
     let filteredTasks = tasks;
 
@@ -95,37 +92,41 @@ const HomeScreen = () => {
 
   const filteredTasks = filterTasks();
 
-  // Fungsi untuk mengelompokkan tugas
+  // Group tasks into Overdue, Today Tasks, and Completed Today
   const groupTasks = () => {
-    const inProgress: never[] = [];
-    const completed: never[] = [];
-    const upcoming: never[] = [];
+    const overdue: any[] = [];
+    const todayTasks: any[] = [];
+    const completedToday: any[] = [];
 
     filteredTasks.forEach(task => {
       const taskTime = parseTime(task.time);
+      const taskDate = new Date(task.createdAt.seconds * 1000); // Assuming Firestore timestamps
+      const taskDay = taskDate.getDate();
 
       if (task.completed) {
-        completed.push(task);
-      } else if (taskTime > currentMinutes) {
-        upcoming.push(task);
+        if (taskDay === currentDay) {
+          completedToday.push(task); // Completed today
+        }
       } else {
-        inProgress.push(task);
+        if (taskTime < currentMinutes) {
+          overdue.push(task); // Overdue tasks
+        } else if (taskDay === currentDay) {
+          todayTasks.push(task); // Today's tasks
+        }
       }
     });
 
-    return { inProgress, completed, upcoming };
+    return { overdue, todayTasks, completedToday };
   };
 
-  const { inProgress, completed, upcoming } = groupTasks();
+  const { overdue, todayTasks, completedToday } = groupTasks();
 
-  // Cek jika ada tugas untuk ditampilkan
   const noTasksMessage = (
     <View style={styles.noTasksMessageContainer}>
       <Text style={styles.noTasksMessageText}>You don't have any tasks yet.</Text>
     </View>
   );
 
-  // Toggle status tugas (centang/ubah status di Firestore)
   const toggleTaskCompletion = async (taskId: string, currentStatus: any) => {
     try {
       const auth = getAuth();
@@ -137,12 +138,10 @@ const HomeScreen = () => {
       }
 
       const db = getFirestore(FIREBASE_APP);
-      const taskRef = doc(db, `users/${userId}/notes`, taskId);
+      const taskRef = doc(db, `users/${userId}/notes, taskId`);
 
-      // Update status di Firestore
       await updateDoc(taskRef, { completed: !currentStatus });
 
-      // Perbarui status di state lokal
       setTasks(prevTasks =>
         prevTasks.map(task =>
           task.id === taskId ? { ...task, completed: !currentStatus } : task
@@ -153,7 +152,6 @@ const HomeScreen = () => {
     }
   };
 
-  // Fungsi untuk menghapus tugas
   const deleteTask = async (taskId: string) => {
     try {
       const auth = getAuth();
@@ -165,11 +163,10 @@ const HomeScreen = () => {
       }
 
       const db = getFirestore(FIREBASE_APP);
-      const taskRef = doc(db, `users/${userId}/notes`, taskId);
+      const taskRef = doc(db, `users/${userId}/notes, taskId`);
 
-      await deleteDoc(taskRef); // Hapus dokumen dari Firestore
+      await deleteDoc(taskRef); 
 
-      // Hapus tugas dari state lokal
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
 
       console.log(`Task with ID ${taskId} deleted successfully`);
@@ -178,21 +175,27 @@ const HomeScreen = () => {
     }
   };
 
-  // Render tugas
   const renderTask = ({ item }) => {
     const categoryIcon = 'clipboard-outline';
 
     const getIndicatorColor = () => {
-      if (item.completed) return "#4CAF50"; // Hijau untuk tugas yang selesai
-      const taskTime = parseTime(item.time);
-      return taskTime > currentMinutes ? "#FFC107" : "#FF6B6B"; // Kuning untuk tugas mendatang, merah untuk overdue
+      console.log("Task Category: ", item.category);  // Log to inspect category
+      if (item.completed) {
+        return "#4CAF50"; // Green for completed tasks
+      } else if (item.category === 'Overdue') {
+        return "#FF6B6B"; // Red for overdue tasks
+      } else if (item.category.toLowerCase() === 'today') {  // Match lowercase category
+        return "#FFC107"; // Yellow for today's tasks
+      }
+      return "#aaa"; // Default color if category is unknown
     };
-
+  
+  
     return (
       <TouchableOpacity
-      style={styles.taskCard}
-      onPress={() => handleTaskPress(item.id, item.completed)}  // Tambahkan flag completed
-    >
+        style={styles.taskCard}
+        onPress={() => handleTaskPress(item.id, item.completed)}
+      >
         <View style={[styles.indicator, { backgroundColor: getIndicatorColor() }]} />
 
         <View style={styles.taskContent}>
@@ -238,13 +241,11 @@ const HomeScreen = () => {
               color="#FFFFFF"
             />
           </TouchableOpacity>
-
         )}
       </TouchableOpacity>
     );
   };
 
-  // Fungsi untuk toggle dropdown
   const toggleGroup = (group: string) => {
     setExpandedGroups((prevState) => ({
       ...prevState,
@@ -253,11 +254,7 @@ const HomeScreen = () => {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ flexGrow: 1 }}
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
       <SearchBar
         placeholder="Tasks, events, and more"
         onChangeText={setSearch}
@@ -296,9 +293,9 @@ const HomeScreen = () => {
           />
         </TouchableOpacity>
         {expandedGroups.overdue && (
-          inProgress.length === 0 ? noTasksMessage : (
+          overdue.length === 0 ? noTasksMessage : (
             <FlatList
-              data={inProgress}
+              data={overdue}
               renderItem={renderTask}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.taskList}
@@ -308,21 +305,21 @@ const HomeScreen = () => {
         )}
       </View>
 
-      {/* Completed */}
+      {/* Today Tasks */}
       <View>
-        <TouchableOpacity onPress={() => toggleGroup('completed')} style={styles.groupHeader}>
-          <Text style={styles.groupTitle}>Completed</Text>
+        <TouchableOpacity onPress={() => toggleGroup('todayTasks')} style={styles.groupHeader}>
+          <Text style={styles.groupTitle}>Today Tasks</Text>
           <MaterialCommunityIcons
-            name={expandedGroups.completed ? "chevron-up" : "chevron-down"}
+            name={expandedGroups.todayTasks ? "chevron-up" : "chevron-down"}
             size={24}
             color="#fff"
             style={styles.chevronIcon}
           />
         </TouchableOpacity>
-        {expandedGroups.completed && (
-          completed.length === 0 ? noTasksMessage : (
+        {expandedGroups.todayTasks && (
+          todayTasks.length === 0 ? noTasksMessage : (
             <FlatList
-              data={completed}
+              data={todayTasks}
               renderItem={renderTask}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.taskList}
@@ -332,21 +329,21 @@ const HomeScreen = () => {
         )}
       </View>
 
-      {/* Upcoming */}
+      {/* Completed Today */}
       <View>
-        <TouchableOpacity onPress={() => toggleGroup('upcoming')} style={styles.groupHeader}>
-          <Text style={styles.groupTitle}>Upcoming</Text>
+        <TouchableOpacity onPress={() => toggleGroup('completedToday')} style={styles.groupHeader}>
+          <Text style={styles.groupTitle}>Completed Today</Text>
           <MaterialCommunityIcons
-            name={expandedGroups.upcoming ? "chevron-up" : "chevron-down"}
+            name={expandedGroups.completedToday ? "chevron-up" : "chevron-down"}
             size={24}
             color="#fff"
             style={styles.chevronIcon}
           />
         </TouchableOpacity>
-        {expandedGroups.upcoming && (
-          upcoming.length === 0 ? noTasksMessage : (
+        {expandedGroups.completedToday && (
+          completedToday.length === 0 ? noTasksMessage : (
             <FlatList
-              data={upcoming}
+              data={completedToday}
               renderItem={renderTask}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.taskList}
@@ -358,7 +355,6 @@ const HomeScreen = () => {
     </ScrollView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -412,7 +408,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   activeFilterTab: {
-    backgroundColor: '#f4ab05',
+    backgroundColor: '#ffd118',
   },
   filterText: {
     color: '#666',

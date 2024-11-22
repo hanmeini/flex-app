@@ -22,6 +22,7 @@ import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 
+// Fungsi untuk memparsing waktu
 const parseTime = (time) => {
   const [hours, minutes] = time.split(' ')[0].split(':').map((num) => parseInt(num));
   const isPM = time.includes('PM');
@@ -65,10 +66,6 @@ const NotesScreen = () => {
     return () => unsubscribe();
   }, []);
 
-  const toggleDropdown = (key) => {
-    setDropdown((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   const currentTime = new Date();
   const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
@@ -83,6 +80,7 @@ const NotesScreen = () => {
   };
 
   const filteredTasks = filterTasks();
+  
 
   const groupTasks = () => {
     const inProgress = [];
@@ -104,99 +102,72 @@ const NotesScreen = () => {
     return { inProgress, completed, upcoming };
   };
 
-  const markTaskAsCompleted = async (taskId) => {
-    try {
-      const auth = getAuth();
-      const userId = auth.currentUser?.uid;
-
-      if (!userId) {
-        console.error('User not logged in');
-        return;
-      }
-
-      const db = getFirestore(FIREBASE_APP);
-      const taskRef = doc(db, `users/${userId}/notes`, taskId);
-
-      await updateDoc(taskRef, { completed: true });
-
-      console.log(`Task ${taskId} marked as completed`);
-    } catch (error) {
-      console.error('Error marking task as completed:', error);
-    }
-  };
-
   const deleteTask = async (taskId) => {
     try {
       const auth = getAuth();
       const userId = auth.currentUser?.uid;
-
+  
       if (!userId) {
-        console.error('User not logged in');
+        console.error("User not logged in");
         return;
       }
-
+  
       const db = getFirestore(FIREBASE_APP);
-      const taskRef = doc(db, `users/${userId}/notes`, taskId);
-
+      const taskRef = doc(db, `users/${userId}/notes, taskId`);
+  
       await deleteDoc(taskRef);
-
+  
       console.log(`Task ${taskId} deleted`);
     } catch (error) {
-      console.error('Error deleting task:', error);
+      console.error("Error deleting task:", error);
     }
   };
+  
 
   const { inProgress, completed, upcoming } = groupTasks();
 
-  const renderTask = ({ item }) => {
-    const categoryIcon = 'folder';
-    const indicatorColor = item.completed
-      ? '#4CAF50' // Green for Completed
-      : parseTime(item.time) > currentMinutes
-      ? '#FFEB3B' // Yellow for Upcoming
-      : '#FF6B6B'; // Red for In Progress
+const renderTask = ({ item }: any) => {
+  const categoryIcon = 'folder';
+  const indicatorColor = item.completed
+    ? '#4CAF50' // Hijau untuk Completed
+    : parseTime(item.time) > currentMinutes
+    ? '#FFEB3B' // Kuning untuk Upcoming
+    : '#FF6B6B'; // Merah untuk In Progress
 
-    return (
-      <TouchableOpacity
-        style={styles.taskCard}
-        onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}
-      >
-        <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
-        <View style={styles.taskContent}>
-          <Text
-            style={[
-              styles.taskTitle,
-              item.completed && { textDecorationLine: 'line-through', color: '#999' },
-            ]}
-          >
-            {item.title}
-          </Text>
+  return (
+    <View style={styles.taskCard}>
+      <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
+      <View style={styles.taskContent}>
+        <Text
+          style={[
+            styles.taskTitle,
+            item.completed && { textDecorationLine: 'line-through', color: '#999' },
+          ]}
+        >
+          {item.title}
+        </Text>
 
-          <View style={styles.timeCategoryContainer}>
-            <Text style={styles.taskTime}>Today</Text>
-            <View style={styles.separatorLine} />
-            <Text style={styles.taskTime}>{item.time}</Text>
-            <View style={styles.categoryContainer}>
-              <MaterialCommunityIcons name={categoryIcon} size={16} color="#ffff" />
-              <Text style={styles.categoryText}>{item.category}</Text>
-            </View>
+        <View style={styles.timeCategoryContainer}>
+          <Text style={styles.taskTime}>Today</Text>
+          <View style={styles.separatorLine} />
+          <Text style={styles.taskTime}>{item.time}</Text>
+          <View style={styles.categoryContainer}>
+            <MaterialCommunityIcons name={categoryIcon} size={16} color="#ffff" />
+            <Text style={styles.categoryText}>{item.category}</Text>
           </View>
         </View>
+      </View>
 
-        {!item.completed && (
-          <TouchableOpacity onPress={() => markTaskAsCompleted(item.id)}>
-            <Ionicons name="ellipse-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-        )}
+      {/* Tombol Delete */}
+      {item.completed && (
+        <TouchableOpacity onPress={() => deleteTask(item.id)}>
+          <MaterialCommunityIcons name="close" size={24} color="#FF6B6B" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
 
-        {item.completed && (
-          <TouchableOpacity onPress={() => deleteTask(item.id)}>
-            <MaterialCommunityIcons name="close" size={24} color="#FF6B6B" />
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
-    );
-  };
 
   return (
     <ScrollView

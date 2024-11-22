@@ -10,49 +10,54 @@ import {
     orderBy,
     onSnapshot,
 } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
-import { useNavigation } from '@react-navigation/native';
 
 const CustomCalendar = () => {
     const [notes, setNotes] = useState<any[]>([]);
     const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const navigation = useNavigation();
 
     // Ambil data dari Firestore
     useEffect(() => {
         const auth = getAuth();
-        const userId = auth.currentUser?.uid;
-
-        if (!userId) {
-            console.error("User not logged in");
-            return;
-        }
-
         const db = getFirestore(FIREBASE_APP);
-        const userNotesCollection = collection(db, `users/${userId}/notes`);
-        const q = query(userNotesCollection, orderBy("createdAt", "desc"));
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const newNotes = snapshot.docs.map((doc) => {
-                const data = doc.data();
-                const createdAt = data.createdAt?.toDate();
-                const dayName = createdAt
-                    ? new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(createdAt)
-                    : "Unknown Day";
-                return {
-                    id: doc.id,
-                    ...data,
-                    day: dayName,
-                    date: createdAt ? createdAt.toISOString().split('T')[0] : null,
-                };
-            });
-            setNotes(newNotes);
+        let unsubscribeNotes: any = null; // Simpan listener Firestore untuk dibersihkan nanti
+    
+        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const userId = user.uid;
+                const userNotesCollection = collection(db, `users/${userId}/notes`);
+                const q = query(userNotesCollection, orderBy("createdAt", "desc"));
+    
+                // Listener Firestore
+                unsubscribeNotes = onSnapshot(q, (snapshot) => {
+                    const newNotes = snapshot.docs.map((doc) => ({
+                        id: doc.id,
+                        ...doc.data(),
+                        createdAt: doc.data().createdAt?.toDate(),
+                    }));
+                    setNotes(newNotes);
+                });
+            } else {
+                // Jika logout, kosongkan state
+                setNotes([]);
+    
+                // Hentikan listener Firestore jika masih aktif
+                if (unsubscribeNotes) {
+                    unsubscribeNotes();
+                    unsubscribeNotes = null;
+                }
+            }
         });
-
-        return () => unsubscribe();
+    
+        // Bersihkan semua listener saat komponen dilepas
+        return () => {
+            if (unsubscribeNotes) unsubscribeNotes();
+            unsubscribeAuth();
+        };
     }, []);
+    
 
     // Atur tampilan DateTimePicker
     const showDatePicker = () => setDatePickerVisibility(true);
@@ -103,8 +108,8 @@ const CustomCalendar = () => {
                         },
                     }}
                     theme={{
-                        backgroundColor: '#1A2529',
-                        calendarBackground: '#1A2529',
+                        backgroundColor: '#141d20',
+                        calendarBackground: '#141d20',
                         textSectionTitleColor: '#b6c1cd',
                         selectedDayBackgroundColor: '#F4AB05',
                         selectedDayTextColor: '#ffffff',
@@ -137,32 +142,29 @@ const CustomCalendar = () => {
                     <View key={day}>
                         <Text style={styles.groupTitle}>{day}</Text>
                         {taskGroup[day].map((item:any) => (
-                            <TouchableOpacity onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}>
-                                <View style={styles.taskCard} key={item.id}>
-                                    <View style={styles.indicator} />
-                                    <View style={styles.taskContent}>
-                                        <Text style={styles.taskTitle}>{item.title}</Text>
-                                        <View style={styles.timeCategoryContainer}>
-                                            <Text style={{ color:'#fff' }}>{day}</Text>
-                                            <View style={styles.separatorLine} />
-                                            <Text style={styles.taskTime}>{item.time}</Text>
-                                            <View style={styles.separatorLine} />
-                                            <View style={styles.categoryContainer}>
-                                                <MaterialCommunityIcons
-                                                    name="folder"
-                                                    size={16}
-                                                    color="#fff"
-                                                />
-                                                <Text style={styles.categoryText}>
-                                                    {item.category || "No Category"}
-                                                </Text>
-                                            </View>
+                            <View style={styles.taskCard} key={item.id}>
+                                <View style={styles.indicator} />
+                                <View style={styles.taskContent}>
+                                    <Text style={styles.taskTitle}>{item.title}</Text>
+                                    <View style={styles.timeCategoryContainer}>
+                                        <Text style={{ color:'#fff' }}>{day}</Text>
+                                        <View style={styles.separatorLine} />
+                                        <Text style={styles.taskTime}>{item.time}</Text>
+                                        <View style={styles.separatorLine} />
+                                        <View style={styles.categoryContainer}>
+                                            <MaterialCommunityIcons
+                                                name="folder"
+                                                size={16}
+                                                color="#fff"
+                                            />
+                                            <Text style={styles.categoryText}>
+                                                {item.category || "No Category"}
+                                            </Text>
                                         </View>
                                     </View>
                                 </View>
-                            </TouchableOpacity>
+                            </View>
                         ))}
-                        <View style={styles.divider} />
                     </View>
                 ))}
             </View>
@@ -174,10 +176,10 @@ const styles = StyleSheet.create({
     container: {
         backgroundColor: '#141d20',
         flex: 1,
+        paddingTop:50,
     },
     containerCalendar: {
         padding: 20,
-        backgroundColor: '#141d20',
         borderRadius: 30,
         margin: 20,
     },
@@ -214,7 +216,7 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 2,
-        backgroundColor: '#444',
+        backgroundColor: '#DADADA',
         marginVertical: 10,
     },
     containerReminder: {
