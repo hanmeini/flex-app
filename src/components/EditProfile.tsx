@@ -50,7 +50,7 @@ const EditProfile = ({ route, navigation }: any) => {
 
     setLoading(true);
     try {
-      const profileRef = doc(firestore, `users/${user.uid}/profile`, 'profileInfo');
+      const profileRef = doc(firestore, `users/${user.uid}/profile`, '8Js4h1TvZBMGR6MngvLg');
       const docSnap = await getDoc(profileRef);
 
       if (docSnap.exists()) {
@@ -134,9 +134,9 @@ const EditProfile = ({ route, navigation }: any) => {
           style={styles.profileImage}
         />
       </TouchableOpacity>
-      <Text style={styles.datadiri}>Data Pribadi</Text>
+      <Text style={styles.datadiri}>Personal Data</Text>
       <View style={styles.containerdata}>
-        <Text style={styles.kolom}>Nama Lengkap</Text>
+        <Text style={styles.kolom}>Full Name</Text>
         <TextInput
           style={styles.input}
           placeholder="Nama Lengkap"
@@ -144,14 +144,14 @@ const EditProfile = ({ route, navigation }: any) => {
           onChangeText={setFullName}
           placeholderTextColor="#fff"
         />
-        <Text style={styles.kolom}>Tanggal Lahir</Text>
+        <Text style={styles.kolom}>Date Of Birth</Text>
         <TextInput
           style={styles.input}
           placeholder="Tanggal Lahir (YYYY-MM-DD)"
           value={dob}
           onChangeText={setDob}
         />
-        <Text style={styles.kolom}>Nomor Telepon</Text>
+        <Text style={styles.kolom}>Phone Number</Text>
         <TextInput
           style={styles.input}
           placeholder="Nomor Telepon"
@@ -161,7 +161,7 @@ const EditProfile = ({ route, navigation }: any) => {
         />
 
         <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
-          <Text style={styles.buttonSave}>Simpan</Text>
+          <Text style={styles.buttonSave}>Save</Text>
           <AntDesign name="checkcircle" size={24} color="#F4AB05" />
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>

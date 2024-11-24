@@ -12,7 +12,7 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
 import { useNavigation } from '@react-navigation/native';
 
@@ -47,26 +47,36 @@ const HomeScreen = () => {
 
   useEffect(() => {
     const auth = getAuth();
-    const userId = auth.currentUser?.uid;
-
-    if (!userId) {
-      console.error("User not logged in");
-      return;
-    }
-
     const db = getFirestore(FIREBASE_APP);
-    const userNotesCollection = collection(db, `users/${userId}/notes`);
-    const q = query(userNotesCollection, orderBy("createdAt", "desc"));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newTasks = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setTasks(newTasks);
+    let unsubscribeNotes;
+
+    // Dengarkan perubahan autentikasi
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const userId = user.uid;
+        const userNotesCollection = collection(db, `users/${userId}/notes`);
+        const q = query(userNotesCollection, orderBy("createdAt", "desc"));
+
+        // Perbarui catatan berdasarkan pengguna yang login
+        unsubscribeNotes = onSnapshot(q, (snapshot) => {
+          const newTasks = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setTasks(newTasks);
+        });
+      } else {
+        // Jika pengguna logout, kosongkan catatan
+        setTasks([]);
+      }
     });
 
-    return () => unsubscribe();
+    // Bersihkan listener saat komponen tidak aktif
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeNotes) unsubscribeNotes();
+    };
   }, []);
 
   // Waktu saat ini (dalam format menit)

@@ -12,25 +12,33 @@ import {
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
+import { format } from "date-fns"; // Import date-fns untuk format tanggal
+import { useNavigation } from '@react-navigation/native';
 
 const CustomCalendar = () => {
     const [notes, setNotes] = useState<any[]>([]);
     const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const navigation = useNavigation();
+
+    // Fungsi untuk mendapatkan nama hari
+    const getDayName = (date: Date | null) => {
+        if (!date) return "Unknown Day";
+        return format(date, "EEEE"); // Contoh: "Monday", "Tuesday"
+    };
 
     // Ambil data dari Firestore
     useEffect(() => {
         const auth = getAuth();
         const db = getFirestore(FIREBASE_APP);
-        let unsubscribeNotes: any = null; // Simpan listener Firestore untuk dibersihkan nanti
-    
+        let unsubscribeNotes: any = null;
+
         const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
             if (user) {
                 const userId = user.uid;
                 const userNotesCollection = collection(db, `users/${userId}/notes`);
                 const q = query(userNotesCollection, orderBy("createdAt", "desc"));
-    
-                // Listener Firestore
+
                 unsubscribeNotes = onSnapshot(q, (snapshot) => {
                     const newNotes = snapshot.docs.map((doc) => ({
                         id: doc.id,
@@ -40,24 +48,19 @@ const CustomCalendar = () => {
                     setNotes(newNotes);
                 });
             } else {
-                // Jika logout, kosongkan state
                 setNotes([]);
-    
-                // Hentikan listener Firestore jika masih aktif
                 if (unsubscribeNotes) {
                     unsubscribeNotes();
                     unsubscribeNotes = null;
                 }
             }
         });
-    
-        // Bersihkan semua listener saat komponen dilepas
+
         return () => {
             if (unsubscribeNotes) unsubscribeNotes();
             unsubscribeAuth();
         };
     }, []);
-    
 
     // Atur tampilan DateTimePicker
     const showDatePicker = () => setDatePickerVisibility(true);
@@ -67,33 +70,10 @@ const CustomCalendar = () => {
         hideDatePicker();
     };
 
-    // Fungsi menambahkan acara ke kalender perangkat
-    const addToCalendar = () => {
-        const eventConfig = {
-            title: 'Custom Event', // Bisa diganti dengan input dari user
-            startDate: selectedDate.toISOString(), // Tanggal yang dipilih di kalender
-            endDate: new Date(selectedDate.getTime() + 60 * 60 * 1000).toISOString(), // Tambahkan 1 jam
-            location: 'Online',
-            notes: 'This is a sample event added via CustomCalendar.',
-        };
-
-        addEvent(eventConfig)
-            .then((eventId) => {
-                if (eventId) {
-                    Alert.alert('Success', 'Event added to your calendar.');
-                } else {
-                    Alert.alert('Cancelled', 'Event creation was cancelled.');
-                }
-            })
-            .catch((error) => {
-                Alert.alert('Error', `Failed to add event: ${error.message}`);
-            });
-    };
-
     // Grupkan berdasarkan nama hari
     const taskGroup = notes.reduce((acc, task) => {
-        const groupKey = task.day || "Unknown Day";
-        acc[groupKey] = acc[groupKey] ? [...acc[groupKey], task] : [task];
+        const dayName = getDayName(task.createdAt);
+        acc[dayName] = acc[dayName] ? [...acc[dayName], task] : [task];
         return acc;
     }, {});
 
@@ -130,7 +110,7 @@ const CustomCalendar = () => {
                 <DateTimePickerModal
                     isVisible={isDatePickerVisible}
                     mode="datetime"
-                    onConfirm={handleConfirm }
+                    onConfirm={handleConfirm}
                     onCancel={hideDatePicker}
                 />
             </View>
@@ -141,13 +121,14 @@ const CustomCalendar = () => {
                 {Object.keys(taskGroup).map((day) => (
                     <View key={day}>
                         <Text style={styles.groupTitle}>{day}</Text>
-                        {taskGroup[day].map((item:any) => (
+                        {taskGroup[day].map((item: any) => (
+                            <TouchableOpacity onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}>
                             <View style={styles.taskCard} key={item.id}>
                                 <View style={styles.indicator} />
                                 <View style={styles.taskContent}>
                                     <Text style={styles.taskTitle}>{item.title}</Text>
                                     <View style={styles.timeCategoryContainer}>
-                                        <Text style={{ color:'#fff' }}>{day}</Text>
+                                        <Text style={{ color: '#fff' }}>{day}</Text>
                                         <View style={styles.separatorLine} />
                                         <Text style={styles.taskTime}>{item.time}</Text>
                                         <View style={styles.separatorLine} />
@@ -164,6 +145,7 @@ const CustomCalendar = () => {
                                     </View>
                                 </View>
                             </View>
+                            </TouchableOpacity>
                         ))}
                     </View>
                 ))}
@@ -171,6 +153,7 @@ const CustomCalendar = () => {
         </ScrollView>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {
@@ -221,6 +204,7 @@ const styles = StyleSheet.create({
     },
     containerReminder: {
         margin: 20,
+        marginBottom:100,
     },
     groupTitle: {
         color: '#fff',

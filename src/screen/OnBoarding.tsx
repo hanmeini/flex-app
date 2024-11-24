@@ -6,13 +6,13 @@ const { width } = Dimensions.get('window');
 
 const data = [
   {
-    image: require('../../assets/images/1.png'),
+    image: require('../../assets/images/1.jpg'),
   },
   {
-    image: require('../../assets/images/2.png'),
+    image: require('../../assets/images/2.jpg'),
   },
   {
-    image: require('../../assets/images/3.png'),
+    image: require('../../assets/images/3.jpg'),
   },
 ];
 

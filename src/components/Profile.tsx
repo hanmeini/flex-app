@@ -8,7 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import {
   getFirestore,
   collection,
@@ -34,67 +34,61 @@ const Profile = ({ navigation }: { navigation: any }) => {
   const db = getFirestore(FIREBASE_APP);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | null = null; // Variabel untuk fungsi unsubscribe
-  
-    const fetchUserData = async () => {
-      setLoading(true);
-      try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-  
-        if (user) {
-          const userId = user.uid;
-  
-          // Ambil data profil dari Firestore
+    const auth = getAuth(FIREBASE_APP);
+    const db = getFirestore(FIREBASE_APP);
+    let unsubscribeNotes = null;
+
+    // Mengamati perubahan autentikasi
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Pengguna masuk
+        const userId = user.uid;
+
+        try {
+          // Ambil data profil pengguna
           const profileRef = doc(db, `users/${userId}/profile/profilInfo`);
           const profileSnap = await getDoc(profileRef);
-  
-          // Set data profil ke state
+
           if (profileSnap.exists()) {
             setUserData(profileSnap.data());
           } else {
+            // Fallback jika data profil tidak ditemukan
             setUserData({
-              fullName: user.email, // Gunakan email sebagai fallback nama
+              fullName: user.email, // Gunakan email sebagai nama
               photoURL: '', // Default foto profil kosong
             });
           }
-  
-          // Ambil data catatan secara real-time
+
+          // Ambil catatan pengguna secara real-time
           const userNotesCollection = collection(db, `users/${userId}/notes`);
-          const q = query(userNotesCollection, orderBy('createdAt', 'desc'));
-  
-          // Daftar listener real-time Firestore
-          unsubscribe = onSnapshot(q, (snapshot) => {
-            const newTasks = snapshot.docs.map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                title: data.title || 'No Title',
-                description: data.description || 'No Description',
-                time: data.time || 'No Time', // Tetap sebagai string
-                category: data.category || 'No Category',
-                completed: data.completed || false,
-              };
-            });
-            setTasks(newTasks); // Simpan data ke state
+          const q = query(userNotesCollection, orderBy("createdAt", "desc"));
+
+          unsubscribeNotes = onSnapshot(q, (snapshot) => {
+            const newTasks = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setTasks(newTasks);
           });
+        } catch (error) {
+          console.error("Error fetching user data:", error);
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        // Pengguna keluar, reset data
+        setUserData(null);
+        setTasks([]);
       }
-    };
-  
-    fetchUserData();
-  
-    // Cleanup listener saat komponen unmount
-    return () => {
-      if (unsubscribe) {
-        unsubscribe(); // Pastikan listener dihentikan
-      }
-    };
-  }, []); // Hanya dipanggil saat pertama kali render
+
+      setLoading(false);
+    });
+        // Cleanup listener autentikasi dan data
+        return () => {
+          unsubscribeAuth();
+          if (unsubscribeNotes) {
+            unsubscribeNotes();
+          }
+        };
+      }, []);
   
   
   const totalTasks = tasks.length;
@@ -172,14 +166,14 @@ const Profile = ({ navigation }: { navigation: any }) => {
         </View>
       </TouchableOpacity>
 
-      <Text style={styles.summaryText}>Ringkasan Tugas</Text>
+      <Text style={styles.summaryText}>Task Summary</Text>
       <View style={styles.taskSummaryContainer}>
         <TaskBox number={totalTasks} label="Total Task" />
         <TaskBox number={completedTasks} label="Completed" />
       </View>
 
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Progress Penyelesaian</Text>
+        <Text style={styles.chartTitle}>Daily task completion</Text>
         <ProgressChart
           progress={completedProgress}
           color="#4caf50"
@@ -193,15 +187,14 @@ const Profile = ({ navigation }: { navigation: any }) => {
       </View>
 
        <View style={styles.upcomingContainer}>
-        <Text style={styles.upcomingTitle}>Daftar Notes</Text>
+        <Text style={styles.upcomingTitle}>Note List</Text>
         <Picker
           selectedValue={selectedFilter}
           style={styles.picker}
           onValueChange={(itemValue) => setSelectedFilter(itemValue)}
         >
-          <Picker.Item label="Semua" value="Semua" />
-          <Picker.Item label="Dalam 7 hari" value="Dalam 7 hari" />
-          <Picker.Item label="Dalam 30 hari" value="Dalam 30 hari" />
+          <Picker.Item label="All" value="All" /> 
+          <Picker.Item label="Hide" value="Dalam 7 hari" />
         </Picker>
 
         {filteredTasks.map((note) => renderTask(note))}
@@ -243,7 +236,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     paddingTop: 60,
-    backgroundColor: '#1A2529',
+    backgroundColor: '#141a20',
+    
   },
   profileContainer: {
     flexDirection: 'row',
@@ -260,9 +254,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
+    fontFamily: "figtree-semibold"
   },
   chartContainer: {
-    padding: 20,
+    padding: 17,
     backgroundColor: '#f9f9f9',
     borderRadius: 15,
     borderWidth: 1,
@@ -270,10 +265,10 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   chartTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
+    fontSize: 17,
     marginBottom: 10,
     textAlign: 'left',
+    fontFamily: "figtree-semibold"
   },
   loadingContainer: {
     flex: 1,
@@ -283,21 +278,22 @@ const styles = StyleSheet.create({
   taskBox: {
     width: '49%',
     padding: 20,
-    backgroundColor: '#28393F',
-    borderRadius: 20,
+    backgroundColor: '#1a2529',
+    borderRadius: 10,
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#DADADA',
   },
   taskNumber: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: "figtree-semibold",
     color: '#fff',
   },
   taskLabel: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#fff',
-    marginTop: 5,
+    marginTop: 10,
+    fontFamily: "figtree"
   },
   upcomingContainer: {
     backgroundColor: '#F3F4F6',
@@ -305,6 +301,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 20,
     borderWidth: 1,
+    marginBottom:100,
     borderColor: '#ddd',
   },
   upcomingTitle: {
@@ -359,15 +356,16 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   summaryText: {
-    fontSize: 15,
-    fontWeight: 'bold',
+    fontSize: 18,
     marginBottom: 20,
     marginTop: 25,
-    textAlign: 'left',
+    textAlign: 'left',    
     color: '#fff',
+    fontFamily: "figtree-semibold"
   },
   textchart: {
     marginBottom: 10,
+    fontFamily: "figtree"
   },
   progressBar: {
     height: 12,
@@ -377,6 +375,7 @@ const styles = StyleSheet.create({
   taskSummaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    fontFamily: "figtree"
   },
   taskContent: {
     flex: 1,
@@ -392,6 +391,7 @@ const styles = StyleSheet.create({
   percentageText: {
     fontSize: 14,
     color: '#666',
+    fontFamily: "figtree"
   },  
   containernama:{
     flexDirection:'row',

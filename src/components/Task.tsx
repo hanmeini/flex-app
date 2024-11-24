@@ -22,7 +22,6 @@ import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 
-// Fungsi untuk memparsing waktu
 const parseTime = (time) => {
   const [hours, minutes] = time.split(' ')[0].split(':').map((num) => parseInt(num));
   const isPM = time.includes('PM');
@@ -38,17 +37,13 @@ const NotesScreen = () => {
     completed: true,
     upcoming: true,
   });
-
   const filters = ['All', 'Personal', 'Work', 'Events'];
 
-  useEffect(() => {
-    const auth = getAuth();
-    const userId = auth.currentUser?.uid;
+  const auth = getAuth();
+  const userId = auth.currentUser?.uid;
 
-    if (!userId) {
-      console.error('User not logged in');
-      return;
-    }
+  useEffect(() => {
+    if (!userId) return;
 
     const db = getFirestore(FIREBASE_APP);
     const userNotesCollection = collection(db, `users/${userId}/notes`);
@@ -64,7 +59,7 @@ const NotesScreen = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userId]);
 
   const currentTime = new Date();
   const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
@@ -79,15 +74,32 @@ const NotesScreen = () => {
     return filteredTasks;
   };
 
-  const filteredTasks = filterTasks();
-  
+  const toggleTaskCompletion = async (taskId, currentStatus) => {
+    try {
+      const db = getFirestore(FIREBASE_APP);
+      const taskRef = doc(db, `users/${userId}/notes/${taskId}`);
+      await updateDoc(taskRef, { completed: !currentStatus });
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    }
+  };
+
+  const deleteTask = async (taskId) => {
+    try {
+      const db = getFirestore(FIREBASE_APP);
+      const taskRef = doc(db, `users/${userId}/notes/${taskId}`);
+      await deleteDoc(taskRef);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
 
   const groupTasks = () => {
     const inProgress = [];
     const completed = [];
     const upcoming = [];
 
-    filteredTasks.forEach((task) => {
+    filterTasks().forEach((task) => {
       const taskTime = parseTime(task.time);
 
       if (task.completed) {
@@ -102,102 +114,95 @@ const NotesScreen = () => {
     return { inProgress, completed, upcoming };
   };
 
-  const deleteTask = async (taskId) => {
-    try {
-      const auth = getAuth();
-      const userId = auth.currentUser?.uid;
-  
-      if (!userId) {
-        console.error("User not logged in");
-        return;
-      }
-  
-      const db = getFirestore(FIREBASE_APP);
-      const taskRef = doc(db, `users/${userId}/notes, taskId`);
-  
-      await deleteDoc(taskRef);
-  
-      console.log(`Task ${taskId} deleted`);
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
+  const toggleDropdown = (key) => {
+    setDropdown((prevState) => ({ ...prevState, [key]: !prevState[key] }));
   };
-  
 
   const { inProgress, completed, upcoming } = groupTasks();
 
-const renderTask = ({ item }: any) => {
-  const categoryIcon = 'folder';
-  const indicatorColor = item.completed
-    ? '#4CAF50' // Hijau untuk Completed
+  const renderTask = ({ item }) => {
+    const categoryIcon = 'folder';
+    const indicatorColor = item.completed
+    ? '#4CAF50'
     : parseTime(item.time) > currentMinutes
-    ? '#FFEB3B' // Kuning untuk Upcoming
-    : '#FF6B6B'; // Merah untuk In Progress
+    ? '#FFEB3B'
+    : '#FF6B6B';
 
-  return (
-    <View style={styles.taskCard}>
-      <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
-      <View style={styles.taskContent}>
-        <Text
-          style={[
-            styles.taskTitle,
-            item.completed && { textDecorationLine: 'line-through', color: '#999' },
-          ]}
-        >
-          {item.title}
-        </Text>
+    return (
+      <TouchableOpacity onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}>
+      <View style={styles.taskCard}>
+        <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
+        <View style={styles.taskContent}>
+          <Text
+            style={[styles.taskTitle]}
+          >
+            {item.title}
+          </Text>
 
-        <View style={styles.timeCategoryContainer}>
-          <Text style={styles.taskTime}>Today</Text>
-          <View style={styles.separatorLine} />
-          <Text style={styles.taskTime}>{item.time}</Text>
-          <View style={styles.categoryContainer}>
+          <View style={styles.timeCategoryContainer}>
+            <Text style={styles.taskTime}>Today</Text>
+            <View style={styles.separatorLine} />
+            <Text style={styles.taskTime}>{item.time}</Text>
+            <View style={styles.categoryContainer}>
             <MaterialCommunityIcons name={categoryIcon} size={16} color="#ffff" />
             <Text style={styles.categoryText}>{item.category}</Text>
           </View>
+          </View>
         </View>
-      </View>
+      {/* Tombol Checklist hanya muncul jika catatan belum completed */}
+      {!item.completed && (
+        <TouchableOpacity 
+          onPress={() => toggleTaskCompletion(item.id, item.completed)}
+        >
+          {/* Ikon lingkaran outline untuk checklist */}
+          <Ionicons
+            name="ellipse-outline"
+            size={24}
+            color="#DADADA"
+          />
+        </TouchableOpacity>
+      )}
 
-      {/* Tombol Delete */}
+      {/* Tombol X hanya muncul jika catatan sudah completed */}
       {item.completed && (
         <TouchableOpacity onPress={() => deleteTask(item.id)}>
           <MaterialCommunityIcons name="close" size={24} color="#FF6B6B" />
         </TouchableOpacity>
       )}
-    </View>
-  );
-};
-
+      </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ flexGrow: 1 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.filterContainer}>
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
+    style={styles.container}
+    contentContainerStyle={{ flexGrow: 1 }}
+    showsVerticalScrollIndicator={false}
+  >
+    <View style={styles.filterContainer}>
+      {filters.map((filter) => (
+        <TouchableOpacity
+          key={filter}
+          style={[
+            styles.filterTab,
+            selectedFilter === filter && styles.activeFilterTab,
+          ]}
+          onPress={() =>
+            navigation.navigate('CategoryNotes', { category: filter })
+          }
+        >
+          <Text
             style={[
-              styles.filterTab,
-              selectedFilter === filter && styles.activeFilterTab,
+              styles.filterText,
+              selectedFilter === filter && styles.activeFilterText,
             ]}
-            onPress={() =>
-              navigation.navigate('CategoryNotes', { category: filter })
-            }
           >
-            <Text
-              style={[
-                styles.filterText,
-                selectedFilter === filter && styles.activeFilterText,
-              ]}
-            >
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+            {filter}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
 
       {Object.entries({ inProgress, completed, upcoming }).map(([key, data]) => (
         <View key={key}>
@@ -219,8 +224,6 @@ const renderTask = ({ item }: any) => {
               data={data}
               renderItem={renderTask}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.taskList}
-              scrollEnabled={false}
             />
           )}
         </View>
@@ -235,19 +238,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#141d20',
     paddingHorizontal: 15,
     paddingTop: 60,
+    fontFamily: 'figtree-semibold'
   },
   filterContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: -150,
+    fontFamily: 'figtree-semibold'
   },
   filterTab: {
     width: '48%',
+    fontFamily: 'figtree-semibold',
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a2529',
+    backgroundColor: '#141a20',
     borderRadius: 10,
     marginBottom: 8,
   },

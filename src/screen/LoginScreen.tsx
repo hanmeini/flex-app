@@ -1,48 +1,96 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, TextInput, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, TextInput } from 'react-native';
 import { IconButton } from 'react-native-paper';
-import {FIREBASE_AUTH} from '../../FirebaseConfig'
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { FIREBASE_AUTH } from '../../FirebaseConfig';
+import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Google from 'expo-auth-session';
+import { useAuthRequest, makeRedirectUri } from 'expo-auth-session';
 
-
-
-const LoginScreen = ({ navigation }:any) => {
-  const handleNext = () => {
-    navigation.navigate('Register');  // Memastikan navigasi ke layar Login
-  };
+const LoginScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const auth = FIREBASE_AUTH;
-  const [secureText, setSecureText] = useState(true); // State untuk mengatur secure text
+  const [secureText, setSecureText] = useState(true);
 
+  // Initialize the Google Auth request
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: '974511282052-q2i8efijkpb4338osrpjd9li4bv21ner.apps.googleusercontent.com', // Replace with your Web Client ID from Firebase Console
+    redirectUri: makeRedirectUri({ useProxy: true }),
+  });
+
+  const auth = FIREBASE_AUTH;
+
+  const handleNext = () => {
+    navigation.navigate('Register');
+  };
 
   const signIn = async () => {
     setLoading(true);
     try {
-        const response = await signInWithEmailAndPassword(auth, email, password);
-        console.log(response);
-        await AsyncStorage.setItem('isLoggedIn', 'true');
-        setTimeout(() => {
-          navigation.navigate("Flexido"); // Arahkan ke Home
-        }, 500);
+      const response = await signInWithEmailAndPassword(auth, email, password);
+      console.log(response);
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+      setTimeout(() => {
+        navigation.navigate('Flexido');
+      }, 500);
     } catch (error: any) {
-        console.log(error);
-        alert('Login failed: '+ error.message)
+      console.log(error);
+      alert('Login failed: ' + error.message);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-  }
+  };
 
-  // Fungsi untuk toggle visibilitas password
   const toggleSecureText = () => {
     setSecureText(!secureText);
   };
 
+  const signInWithGoogle = async () => {
+    if (request?.loading) {
+      console.log('Authentication request is still loading...');
+      return; // Avoid calling promptAsync until the request is ready
+    }
 
- 
-  
+    try {
+      const result = await promptAsync();
+      if (result.type === 'success') {
+        const { id_token } = result.params;
+        const credential = GoogleAuthProvider.credential(id_token);
+
+        const userCredential = await signInWithCredential(auth, credential);
+        console.log(userCredential);
+
+        await AsyncStorage.setItem('isLoggedIn', 'true');
+        setTimeout(() => {
+          navigation.navigate('Flexido');
+        }, 500);
+      } else {
+        console.log('Google sign-in failed');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Login with Google failed');
+    }
+  };
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+
+      signInWithCredential(auth, credential)
+        .then((userCredential) => {
+          console.log('User signed in with Google:', userCredential);
+          AsyncStorage.setItem('isLoggedIn', 'true');
+          navigation.navigate('Flexido');
+        })
+        .catch((error) => {
+          console.log('Firebase Sign-In Error:', error);
+        });
+    }
+  }, [response]);
+
   return (
     <View style={styles.container}>
       {/* Logo */}
@@ -51,7 +99,7 @@ const LoginScreen = ({ navigation }:any) => {
       {/* Title */}
       <Text style={styles.title}>Login and Be Productive!</Text>
 
-            {/* Email Input */}
+      {/* Email Input */}
       <TextInput
         value={email}
         style={styles.input}
@@ -61,7 +109,6 @@ const LoginScreen = ({ navigation }:any) => {
         autoCapitalize="none"
         onChangeText={setEmail}
       />
-      
 
       {/* Password Input */}
       <TextInput
@@ -74,13 +121,13 @@ const LoginScreen = ({ navigation }:any) => {
         onChangeText={setPassword}
       />
 
-        <IconButton
-          icon={secureText ? "eye-off" : "eye"}
-          size={25}
-          onPress={toggleSecureText}
-          style={styles.icon}
-          iconColor='#d3d3d3'
-        />
+      <IconButton
+        icon={secureText ? 'eye-off' : 'eye'}
+        size={25}
+        onPress={toggleSecureText}
+        style={styles.icon}
+        iconColor="#d3d3d3"
+      />
 
       {/* Login Button */}
       <TouchableOpacity style={styles.loginButton} onPress={signIn}>
@@ -96,9 +143,9 @@ const LoginScreen = ({ navigation }:any) => {
 
       {/* Social Login Options */}
       <View style={styles.socialLoginContainer}>
-        <TouchableOpacity style={styles.socialButton}>
+        <TouchableOpacity style={styles.socialButton} onPress={signInWithGoogle}>
           <Image
-            source={require('../../assets/images/googlelogo-removebg-preview.png')} // Ganti dengan path logo Google
+            source={require('../../assets/images/googlelogo-removebg-preview.png')} // Google logo
             style={styles.googleLogo}
           />
           <Text style={styles.socialButtonText}>Continue with Google</Text>

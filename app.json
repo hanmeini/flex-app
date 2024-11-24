@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/flexido.png",
     "userInterfaceStyle": "light",
-    "scheme":"Flexido",
+    "scheme": "Flexido",
     "splash": {
       "image": "./assets/images/splashsc.png",
       "resizeMode": "contain",
@@ -27,6 +27,11 @@
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8486a39f-ca33-462b-b0bf-99b1a303e304"
+      }
+    }
   }
 }

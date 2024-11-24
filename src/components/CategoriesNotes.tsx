@@ -83,7 +83,7 @@ const CategoryNotes = ({ navigation }) => { // Added navigation prop
             >
                 <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
                 <View style={styles.taskContent}>
-                    <Text style={[styles.taskTitle, item.completed && { textDecorationLine: 'line-through', color: '#999' }]}>
+                    <Text style={[styles.taskTitle]}>
                         {item.title}
                     </Text>
                     <View style={styles.timeCategoryContainer}>
