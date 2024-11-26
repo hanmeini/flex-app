@@ -21,16 +21,19 @@ import {
 import { getAuth } from 'firebase/auth';
 import { FIREBASE_APP } from '../../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
+import { SearchBar } from '@rneui/themed'
+import { format } from 'date-fns';
 
-const parseTime = (time) => {
-  const [hours, minutes] = time.split(' ')[0].split(':').map((num) => parseInt(num));
-  const isPM = time.includes('PM');
-  return isPM ? (hours % 12 + 12) * 60 + minutes : hours * 60 + minutes;
+const parseTimestamp = (timestamp) => {
+  const date = timestamp.toDate();  // Mengonversi Timestamp ke Date JS
+  const minutes = date.getHours() * 60 + date.getMinutes();  // Menghitung total menit
+  return minutes;
 };
 
 const NotesScreen = () => {
   const navigation = useNavigation();
   const [tasks, setTasks] = useState([]);
+  const [search, setSearch] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [dropdown, setDropdown] = useState({
     inProgress: true,
@@ -66,13 +69,26 @@ const NotesScreen = () => {
 
   const filterTasks = () => {
     let filteredTasks = tasks;
-
+  
+    // Filter berdasarkan kategori
     if (selectedFilter !== 'All') {
       filteredTasks = filteredTasks.filter((task) => task.category === selectedFilter);
     }
-
+  
+    // Filter berdasarkan pencarian
+    if (search.trim() !== '') {
+      const searchLower = search.toLowerCase();
+      filteredTasks = filteredTasks.filter(
+        (task) =>
+          task.title.toLowerCase().includes(searchLower) ||
+          task.description?.toLowerCase().includes(searchLower) ||
+          task.category?.toLowerCase().includes(searchLower)
+      );
+    }
+  
     return filteredTasks;
   };
+  
 
   const toggleTaskCompletion = async (taskId, currentStatus) => {
     try {
@@ -95,84 +111,122 @@ const NotesScreen = () => {
   };
 
   const groupTasks = () => {
-    const inProgress = [];
+    const overdue = [];
     const completed = [];
     const upcoming = [];
+    const today = [];
 
     filterTasks().forEach((task) => {
-      const taskTime = parseTime(task.time);
+      const taskTime = parseTimestamp(task.time);
 
       if (task.completed) {
         completed.push(task);
       } else if (taskTime > currentMinutes) {
         upcoming.push(task);
       } else {
-        inProgress.push(task);
+        overdue.push(task);
       }
     });
 
-    return { inProgress, completed, upcoming };
+    return { overdue, completed, upcoming, today };
   };
 
   const toggleDropdown = (key) => {
     setDropdown((prevState) => ({ ...prevState, [key]: !prevState[key] }));
   };
 
-  const { inProgress, completed, upcoming } = groupTasks();
+  const { today, overdue, completed, upcoming } = groupTasks();
 
   const renderTask = ({ item }) => {
     const categoryIcon = 'folder';
+    const taskTime = item.time ? item.time.toDate() : null;
+  
+    // Tentukan warna indikator berdasarkan status dan waktu tugas
     const indicatorColor = item.completed
-    ? '#4CAF50'
-    : parseTime(item.time) > currentMinutes
-    ? '#FFEB3B'
-    : '#FF6B6B';
-
+      ? '#4CAF50' // Hijau untuk tugas selesai
+      : taskTime && parseTimestamp(item.time) > currentMinutes
+      ? '#FFEB3B' // Kuning untuk tugas di masa depan
+      : '#FF6B6B'; // Merah untuk tugas yang overdue
+  
+    // Format tanggal dan waktu
+    const formatTime = (timestamp) => {
+      if (!timestamp?.seconds) return "Unknown Time";
+      const date = timestamp.toDate();
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+    const getDayName = (timestamp) => {
+      if (!timestamp?.seconds) return "Unknown Day";
+      const date = timestamp.toDate();
+      return format(date, "EEEE"); // Contoh hasil: "Monday", "Tuesday"
+    };
+    let displayTime = item.time;
+    if (displayTime?.seconds) {
+      displayTime = displayTime.toDate(); // Konversi dari Firestore Timestamp ke JavaScript Date
+    }
+  
+    const formattedDate = getDayName(item.time);
+    const formattedTime = formatTime(item.time);
+  
     return (
-      <TouchableOpacity onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}>
-      <View style={styles.taskCard}>
-        <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
-        <View style={styles.taskContent}>
-          <Text
-            style={[styles.taskTitle]}
-          >
-            {item.title}
-          </Text>
-
-          <View style={styles.timeCategoryContainer}>
-            <Text style={styles.taskTime}>Today</Text>
-            <View style={styles.separatorLine} />
-            <Text style={styles.taskTime}>{item.time}</Text>
-            <View style={styles.categoryContainer}>
-            <MaterialCommunityIcons name={categoryIcon} size={16} color="#ffff" />
-            <Text style={styles.categoryText}>{item.category}</Text>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}
+      >
+        <View style={styles.taskCard}>
+          {/* Indikator warna status tugas */}
+          <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
+  
+          {/* Konten utama tugas */}
+          <View style={styles.taskContent}>
+            {/* Judul tugas */}
+            <Text style={styles.taskTitle}>{item.title}</Text>
+  
+            {/* Informasi waktu dan kategori */}
+            <View style={styles.timeCategoryContainer}>
+              <Text style={styles.taskTime}>{formattedDate}</Text>
+              <View style={styles.separatorLine} />
+              <Text style={styles.taskTime}>{formattedTime}</Text>
+  
+              {/* Kategori tugas */}
+              <View style={styles.categoryContainer}>
+                <MaterialCommunityIcons
+                  name={categoryIcon}
+                  size={16}
+                  color="#ffff"
+                />
+                <Text style={styles.categoryText}>{item.category}</Text>
+              </View>
+            </View>
           </View>
+  
+          {/* Tombol Checklist & Hapus */}
+            {/* Checklist untuk tugas yang belum selesai */}
+            {!item.completed && (
+              <TouchableOpacity
+                onPress={() => toggleTaskCompletion(item.id, item.completed)}
+              >
+                <Ionicons
+                  name="ellipse-outline"
+                  size={24}
+                  color="#DADADA"
+                />
+              </TouchableOpacity>
+            )}
+  
+            {/* Hapus untuk tugas yang selesai */}
+            {item.completed && (
+              <TouchableOpacity onPress={() => deleteTask(item.id)}>
+                <MaterialCommunityIcons
+                  name="close"
+                  size={24}
+                  color="#FF6B6B"
+                />
+              </TouchableOpacity>
+            )}
           </View>
-        </View>
-      {/* Tombol Checklist hanya muncul jika catatan belum completed */}
-      {!item.completed && (
-        <TouchableOpacity 
-          onPress={() => toggleTaskCompletion(item.id, item.completed)}
-        >
-          {/* Ikon lingkaran outline untuk checklist */}
-          <Ionicons
-            name="ellipse-outline"
-            size={24}
-            color="#DADADA"
-          />
-        </TouchableOpacity>
-      )}
-
-      {/* Tombol X hanya muncul jika catatan sudah completed */}
-      {item.completed && (
-        <TouchableOpacity onPress={() => deleteTask(item.id)}>
-          <MaterialCommunityIcons name="close" size={24} color="#FF6B6B" />
-        </TouchableOpacity>
-      )}
-      </View>
       </TouchableOpacity>
     );
   };
+  
 
   return (
     <ScrollView
@@ -180,6 +234,15 @@ const NotesScreen = () => {
     contentContainerStyle={{ flexGrow: 1 }}
     showsVerticalScrollIndicator={false}
   >
+      <SearchBar
+        placeholder="Tasks, events, and more"
+        onChangeText={setSearch}
+        value={search}
+        containerStyle={styles.searchContainer}
+        inputContainerStyle={styles.searchInputContainer}
+        inputStyle={styles.searchInput}
+        searchIcon={{ size: 23 }}
+      />
     <View style={styles.filterContainer}>
       {filters.map((filter) => (
         <TouchableOpacity
@@ -204,7 +267,7 @@ const NotesScreen = () => {
       ))}
     </View>
 
-      {Object.entries({ inProgress, completed, upcoming }).map(([key, data]) => (
+      {Object.entries({ today, overdue, upcoming, completed}).map(([key, data]) => (
         <View key={key}>
           <TouchableOpacity
             style={styles.dropdownHeader}
@@ -237,7 +300,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#141d20',
     paddingHorizontal: 15,
-    paddingTop: 60,
+    paddingTop: 15,
     fontFamily: 'figtree-semibold'
   },
   filterContainer: {
@@ -256,12 +319,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#141a20',
     borderRadius: 10,
     marginBottom: 8,
+    borderWidth:1,
+    borderColor:'#DADADA'
   },
   activeFilterTab: {
     backgroundColor: '#f4ab05',
   },
   filterText: {
-    color: '#666',
+    color: '#fff',
     fontSize: 16,
   },
   activeFilterText: {
@@ -329,6 +394,24 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     padding: 10,
+  },
+  searchContainer: {
+    backgroundColor: '#141d20',
+    paddingTop: 40,
+    borderBottomWidth: 0,
+    borderTopWidth: 0,
+    marginBottom:30,
+  },
+  searchInputContainer: {
+    backgroundColor: '#1a2529',
+    borderRadius: 22,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  searchInput: {
+    color: '#999',
+    fontSize: 16,
+    fontFamily: 'figtree',
   },
 });
 

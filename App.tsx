@@ -3,7 +3,6 @@ import AppNavigator from './AppNavigator';
 import './global.css';
 import * as Font from 'expo-font';
 import * as Notifications from 'expo-notifications';
-import * as Permissions from 'expo-permissions';
 import { Alert } from 'react-native';
 
 export default function App() {

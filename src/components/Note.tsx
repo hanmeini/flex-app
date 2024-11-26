@@ -2,18 +2,18 @@ import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, Timestamp } from "firebase/firestore"; // Import Timestamp
 import { FIREBASE_APP } from "../../FirebaseConfig";
 import { getAuth } from "firebase/auth";
 
 const Note = ({ navigation }: any) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date()); // Default date initialized to the current date
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [reminderTime, setReminderTime] = useState("");
   const [categories, setCategories] = useState(["Personal", "Work", "Events"]);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [time, setTime] = useState<Timestamp | null>(null); // State to store the selected time as Timestamp
 
   // Show and hide date picker
   const showDatePicker = () => setDatePickerVisibility(true);
@@ -21,13 +21,8 @@ const Note = ({ navigation }: any) => {
 
   // Handle date picker confirmation
   const handleConfirm = (date: Date) => {
-    setSelectedDate(date);
-    setReminderTime(
-      `${date.toLocaleDateString("en-GB")} ${date.toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`
-    );
+    setSelectedDate(date); // Update the selected date
+    setTime(Timestamp.fromDate(date)); // Update the time state as a Firestore Timestamp
     hideDatePicker();
   };
 
@@ -41,7 +36,7 @@ const Note = ({ navigation }: any) => {
       return;
     }
 
-    if (!title.trim() || !description.trim() || !selectedCategory) {
+    if (!title.trim() || !description.trim() || !selectedCategory || !time) {
       console.error("Please fill all fields");
       return;
     }
@@ -49,22 +44,24 @@ const Note = ({ navigation }: any) => {
     try {
       const db = getFirestore(FIREBASE_APP);
       const userNotesCollection = collection(db, `users/${userId}/notes`);
+
+      // Save the time as a Firestore Timestamp directly
       await addDoc(userNotesCollection, {
         title,
         description,
-        time: reminderTime || "No time set",
+        time, // Ensure time is a Timestamp object
         category: selectedCategory,
-        createdAt: new Date(),
+        createdAt: new Date(), // Firestore will automatically store this as a timestamp
       });
 
       // Reset form
       setTitle("");
       setDescription("");
-      setReminderTime("");
       setSelectedCategory("");
+      setTime(null); // Reset time state after submission
 
       // Navigate to Task screen with details
-      navigation.navigate("Task", { title, time: reminderTime, description });
+      navigation.navigate("All Task");
     } catch (error) {
       console.error("Error adding note to Firestore: ", error);
     }
@@ -126,8 +123,8 @@ const Note = ({ navigation }: any) => {
               {categories.map((category) => (
                 <TouchableOpacity
                   key={category}
-                  style={[
-                    styles.categoryButton,
+                  style={[ 
+                    styles.categoryButton, 
                     selectedCategory === category && styles.selectedCategoryButton,
                   ]}
                   onPress={() => setSelectedCategory(category)}
@@ -159,6 +156,8 @@ const Note = ({ navigation }: any) => {
 };
 
 export default Note;
+
+
 
 const styles = StyleSheet.create({
   container: {

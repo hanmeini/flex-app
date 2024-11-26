@@ -4,7 +4,7 @@
     "slug": "Flexido",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/flexido.png",
+    "icon": "./assets/images/logo2.png",
     "userInterfaceStyle": "light",
     "scheme": "Flexido",
     "splash": {
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#141a20"
       },
       "package": "com.aplication.flexido"
     },

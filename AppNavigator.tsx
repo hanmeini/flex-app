@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import HomeScreen from './src/components/Home';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import TaskScreen from './src/components/Task';
@@ -22,6 +22,9 @@ import CategoryNotes from './src/components/CategoriesNotes';
 import TaskDetailScreen from './src/components/TaskDetail';
 import TaskDetail from './src/components/TaskDetail';
 import EditProfile from './src/components/EditProfile';
+import { View } from 'react-native';
+import { onAuthStateChanged } from 'firebase/auth';
+import { FIREBASE_AUTH } from './FirebaseConfig';
 
 
 const Tab = createBottomTabNavigator();
@@ -156,6 +159,20 @@ function TabNavigator() {
                     tabBarButton: () => null,
                 }}
             />
+            <Tab.Screen
+                name="TaskDetail"
+                component={TaskDetail}
+                options={{
+                    tabBarButton: () => null,
+                }}
+            />
+            <Tab.Screen
+                name="CategoryNotes"
+                component={CategoryNotes}
+                options={{
+                    tabBarButton: () => null,
+                }}
+            />
         </Tab.Navigator>
     );
 }
@@ -182,7 +199,7 @@ function CustomDrawerContent(props:any) {
             <DrawerItem
                 icon={({ size, color }) => <Ionicons name="list" size={size} color={color} />}
                 label="All Task"
-                onPress={() => props.navigation.navigate('Task')}
+                onPress={() => props.navigation.navigate('TaskDetail')}
                 style={[styles.drawerItem, getDrawerItemStyle('Task')]}
                 labelStyle={[styles.drawerLabel, activeRoute === 'Task' && styles.activeLabel]}
             />
@@ -215,7 +232,7 @@ function DrawerNavigator() {
         <Drawer.Navigator drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{headerShown: false}}>
             <Drawer.Screen
-                name="Flexidos"
+                name="Flexido"
                 component={TabNavigator}
                 options={{
                     headerStyle: { backgroundColor: '#1A2529', height: 90 },
@@ -227,53 +244,79 @@ function DrawerNavigator() {
     );
 }
 
-function AppNavigator() {
-    const [isLoggedIn, setIsLoggedIn] = useState(null);
-    const [hasSeenOnboarding, setHasSeenOnboarding] = useState(null);
 
-    useEffect(() => {
-        const checkStatus = async () => {
-            const loggedInStatus = await AsyncStorage.getItem('isLoggedIn');
-            const onboardingStatus = await AsyncStorage.getItem('hasSeenOnboarding');
-            setIsLoggedIn(loggedInStatus === 'true');
-            setHasSeenOnboarding(onboardingStatus === 'true');
-        };
-        checkStatus();
-    }, []);
+export default function AppNavigator() {
+  const [isLoggedIn, setIsLoggedIn] = useState(null);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(null);
 
-    if (isLoggedIn === null || hasSeenOnboarding === null) return null;
+  useEffect(() => {
+    const loadAppState = async () => {
+      try {
+        // Ambil status login dan onboarding dari AsyncStorage
+        const loggedInStatus = await AsyncStorage.getItem('isLoggedIn');
+        const onboardingStatus = await AsyncStorage.getItem('hasSeenOnboarding');
 
+        setIsLoggedIn(loggedInStatus === 'true'); // Set login status
+        setHasSeenOnboarding(onboardingStatus === 'true'); // Set onboarding status
+      } catch (error) {
+        console.error('Error loading app state:', error);
+      }
+    };
+
+    loadAppState();
+  }, []);
+
+  // Tampilkan loading spinner saat memeriksa status
+  if (isLoggedIn === null || hasSeenOnboarding === null) {
     return (
-        <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-                {!hasSeenOnboarding ? (
-                    <Stack.Screen
-                        name="Onboarding"
-                        component={OnboardingScreen}
-                        options={{
-                            animationEnabled: true,
-                        }}
-                    />
-                ) : isLoggedIn ? (
-                    <Stack.Screen name="Flexido" component={DrawerNavigator} />
-                ) : (
-                    <Stack.Screen name="Login" component={LoginScreen} />
-                )}
-
-                <Stack.Screen name='TaskDetail' component={TaskDetail}/>
-                <Stack.Screen name="Register" component={RegisterScreen} />
-                <Stack.Screen name="Note" component={Note} />
-                <Stack.Screen name="Task" component={Task} />
-                <Stack.Screen name="Login" component={LoginScreen}/>
-                <Stack.Screen name="Flexido" component={DrawerNavigator}/>
-                <Stack.Screen name="CategoryNotes" component={CategoryNotes} />
-                <Stack.Screen name="EditProfile" component={EditProfile} />
-            </Stack.Navigator>
-        </NavigationContainer>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
     );
-}
+  }
 
-export default AppNavigator;
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {/* Jika onboarding belum selesai, tampilkan layar Onboarding */}
+        {!hasSeenOnboarding ? (
+          <Stack.Screen name="Onboarding">
+            {(props) => (
+              <OnboardingScreen
+                {...props}
+                onFinish={async () => {
+                  await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+                  setHasSeenOnboarding(true);
+                }}
+              />
+            )}
+          </Stack.Screen>
+        ) : isLoggedIn ? (
+          // Jika user sudah login, arahkan ke Home
+          <Stack.Screen name="Flexido" component={DrawerNavigator} />
+        ) : (
+          // Jika user belum login, arahkan ke Login
+          <Stack.Screen name="Login">
+            {(props) => (
+              <LoginScreen
+                {...props}
+                onLoginSuccess={async () => {
+                  await AsyncStorage.setItem('isLoggedIn', 'true');
+                  setIsLoggedIn(true);
+                }}
+              />
+            )}
+          </Stack.Screen>
+        )}
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfile} />
+        <Stack.Screen name="Flexido" component={DrawerNavigator} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}  
+
 
 const styles = StyleSheet.create({
     drawerItem: {

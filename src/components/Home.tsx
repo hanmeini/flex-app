@@ -11,17 +11,14 @@ import {
   deleteDoc,
   doc,
   updateDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
 import { useNavigation } from '@react-navigation/native';
+import { format } from "date-fns";
 
-// Fungsi untuk memparsing waktu
-const parseTime = (time: { split: (arg0: string) => { split: (arg0: string) => { (): any; new(): any; map: { (arg0: (num: any) => number): [any, any]; new(): any; }; }; }[]; includes: (arg0: string) => any; }) => {
-  const [hours, minutes] = time.split(' ')[0].split(':').map((num: string) => parseInt(num));
-  const isPM = time.includes('PM');
-  return isPM ? (hours % 12 + 12) * 60 + minutes : hours * 60 + minutes;
-};
+
 
 const HomeScreen = () => {
   const [search, setSearch] = useState('');
@@ -108,24 +105,28 @@ const HomeScreen = () => {
     const todayTasks: any[] = [];
     const completedToday: any[] = [];
 
-    filteredTasks.forEach(task => {
-      const taskTime = parseTime(task.time);
-      const taskDate = new Date(task.createdAt.seconds * 1000); // Assuming Firestore timestamps
-      const taskDay = taskDate.getDate();
-
+    filteredTasks.forEach((task) => {
+      const taskTime = task.time?.toDate();
+      const taskDate = task.createdAt?.toDate();
+      const isToday = taskDate?.toDateString() === currentTime.toDateString(); // Apakah tugas dibuat hari ini
+  
       if (task.completed) {
-        if (taskDay === currentDay) {
+        if (isToday) {
           completedToday.push(task); // Completed today
         }
       } else {
-        if (taskTime < currentMinutes) {
-          overdue.push(task); // Overdue tasks
-        } else if (taskDay === currentDay) {
-          todayTasks.push(task); // Today's tasks
+        if (taskTime) {
+          if (taskTime < currentTime) {
+            overdue.push(task); // Overdue jika waktu sudah berlalu
+          } else if (isToday) {
+            todayTasks.push(task); // Today's tasks jika dibuat hari ini dan belum selesai
+          }
+        } else if (isToday) {
+          todayTasks.push(task); // Jika tidak ada `time`, tetap masukkan ke Today Tasks
         }
       }
     });
-
+  
     return { overdue, todayTasks, completedToday };
   };
 
@@ -137,30 +138,35 @@ const HomeScreen = () => {
     </View>
   );
 
-  const toggleTaskCompletion = async (taskId: string, currentStatus: any) => {
+  const toggleTaskCompletion = async (docId: string, currentStatus: any) => {
     try {
       const auth = getAuth();
       const userId = auth.currentUser?.uid;
-
+  
       if (!userId) {
         console.error("User not logged in");
         return;
       }
-
+  
       const db = getFirestore(FIREBASE_APP);
-      const taskRef = doc(db, `users/${userId}/notes, taskId`);
-
+  
+      // Gunakan docId sebagai bagian dari path
+      const taskRef = doc(db, `users/${userId}/notes/${docId}`);
+  
       await updateDoc(taskRef, { completed: !currentStatus });
-
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
-          task.id === taskId ? { ...task, completed: !currentStatus } : task
+  
+      // Perbarui state lokal
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === docId ? { ...task, completed: !currentStatus } : task
         )
       );
     } catch (error) {
       console.error("Error toggling completion:", error);
     }
   };
+  
+  
 
   const deleteTask = async (taskId: string) => {
     try {
@@ -187,42 +193,64 @@ const HomeScreen = () => {
 
   const renderTask = ({ item }) => {
     const categoryIcon = 'clipboard-outline';
-
+  
+    // Fungsi untuk menentukan warna indikator
     const getIndicatorColor = () => {
-      console.log("Task Category: ", item.category);  // Log to inspect category
       if (item.completed) {
-        return "#4CAF50"; // Green for completed tasks
-      } else if (item.category === 'Overdue') {
-        return "#FF6B6B"; // Red for overdue tasks
-      } else if (item.category.toLowerCase() === 'today') {  // Match lowercase category
-        return "#FFC107"; // Yellow for today's tasks
+        return "#4CAF50"; // Hijau untuk tugas selesai
+      } else if (item.category?.toLowerCase() === 'overdue') {
+        return "#FF6B6B"; // Merah untuk overdue
+      } else if (item.category?.toLowerCase() === 'today') {
+        return "#FFC107"; // Kuning untuk hari ini
       }
-      return "#aaa"; // Default color if category is unknown
+      return "#aaa"; // Warna default jika kategori tidak diketahui
+    };
+
+    const formatTime = (timestamp) => {
+      if (!timestamp?.seconds) return "Unknown Time";
+      const date = timestamp.toDate();
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const getDayName = (timestamp) => {
+      if (!timestamp?.seconds) return "Unknown Day";
+      const date = timestamp.toDate();
+      return format(date, "EEEE"); // Contoh hasil: "Monday", "Tuesday"
     };
   
+    // Validasi dan pemformatan waktu
+    let displayTime = item.time;
+    if (displayTime?.seconds) {
+      displayTime = displayTime.toDate(); // Konversi dari Firestore Timestamp ke JavaScript Date
+    }
+  
+    const formattedDate = getDayName(item.time);
+    const formattedTime = formatTime(item.time);
   
     return (
       <TouchableOpacity
         style={styles.taskCard}
         onPress={() => handleTaskPress(item.id, item.completed)}
       >
+        {/* Indikator Warna */}
         <View style={[styles.indicator, { backgroundColor: getIndicatorColor() }]} />
-
+  
+        {/* Konten Tugas */}
         <View style={styles.taskContent}>
           <Text
             style={[
               styles.taskTitle,
-              item.completed && { textDecorationLine: 'line-through', color: '#999' },
+              item.completed && { textDecorationLine: 'line-through', color: '#999' }, // Gaya untuk tugas selesai
             ]}
           >
             {item.title}
           </Text>
-
+          {/* Informasi Waktu dan Kategori */}
           <View style={styles.timeCategoryContainer}>
-            <Text style={styles.taskTime}>Today</Text>
+            <Text style={styles.taskTime}>{formattedDate}</Text>
             <View style={styles.separatorLine} />
-            <Text style={styles.taskTime}>{item.time}</Text>
-
+            <Text style={styles.taskTime}>{formattedTime}</Text>
+  
             <View style={styles.categoryContainer}>
               <View style={styles.verticalSeparator} />
               <MaterialCommunityIcons
@@ -234,7 +262,8 @@ const HomeScreen = () => {
             </View>
           </View>
         </View>
-
+  
+        {/* Tombol Tindakan */}
         {item.completed ? (
           <TouchableOpacity onPress={() => deleteTask(item.id)} style={styles.checkIcon}>
             <MaterialCommunityIcons
@@ -255,6 +284,7 @@ const HomeScreen = () => {
       </TouchableOpacity>
     );
   };
+  
 
   const toggleGroup = (group: string) => {
     setExpandedGroups((prevState) => ({
@@ -455,7 +485,7 @@ const styles = StyleSheet.create({
     fontFamily: 'figtree-semibold',
   },
   taskTime: {
-    color: '#999',
+    color: '#fff',
     fontSize: 13,
     marginTop: 4,
     fontFamily: 'figtree-semibold',
@@ -472,7 +502,7 @@ const styles = StyleSheet.create({
     width: 1,
     height: 15,
     marginTop: 2,
-    backgroundColor: '#666',
+    backgroundColor: '#fff',
     marginHorizontal: 8,
   },
   categoryContainer: {

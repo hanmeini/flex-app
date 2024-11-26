@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
 import Swiper from 'react-native-swiper';
@@ -19,10 +20,10 @@ const data = [
 function OnboardingScreen({ navigation }: any) {
 
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const handleSkip = () => {
-    navigation.navigate('AppNavigator');
-  };
+  const completeOnboarding = async () => {
+    await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+    navigation.replace('Login'); // Ganti ke Login setelah onboarding selesai
+};
 
   const handleSignUp = () => {
     navigation.navigate("Register");

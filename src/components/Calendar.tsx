@@ -1,158 +1,175 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { Calendar } from 'react-native-calendars';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import {
-    getFirestore,
-    collection,
-    query,
-    orderBy,
-    onSnapshot,
-} from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { FIREBASE_APP } from "../../FirebaseConfig";
-import { format } from "date-fns"; // Import date-fns untuk format tanggal
-import { useNavigation } from '@react-navigation/native';
+    import React, { useEffect, useState } from 'react';
+    import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+    import DateTimePickerModal from 'react-native-modal-datetime-picker';
+    import { Calendar } from 'react-native-calendars';
+    import { MaterialCommunityIcons } from '@expo/vector-icons';
+    import {
+        getFirestore,
+        collection,
+        query,
+        orderBy,
+        onSnapshot,
+    } from "firebase/firestore";
+    import { getAuth, onAuthStateChanged } from "firebase/auth";
+    import { FIREBASE_APP } from "../../FirebaseConfig";
+    import { format } from "date-fns"; // Import date-fns untuk format tanggal
+    import { useNavigation } from '@react-navigation/native';
 
-const CustomCalendar = () => {
-    const [notes, setNotes] = useState<any[]>([]);
-    const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const navigation = useNavigation();
+    const CustomCalendar = () => {
+        const [notes, setNotes] = useState<any[]>([]);
+        const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+        const [selectedDate, setSelectedDate] = useState(new Date());
+        const navigation = useNavigation();
 
-    // Fungsi untuk mendapatkan nama hari
-    const getDayName = (date: Date | null) => {
-        if (!date) return "Unknown Day";
-        return format(date, "EEEE"); // Contoh: "Monday", "Tuesday"
-    };
-
-    // Ambil data dari Firestore
-    useEffect(() => {
-        const auth = getAuth();
-        const db = getFirestore(FIREBASE_APP);
-        let unsubscribeNotes: any = null;
-
-        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                const userId = user.uid;
-                const userNotesCollection = collection(db, `users/${userId}/notes`);
-                const q = query(userNotesCollection, orderBy("createdAt", "desc"));
-
-                unsubscribeNotes = onSnapshot(q, (snapshot) => {
-                    const newNotes = snapshot.docs.map((doc) => ({
-                        id: doc.id,
-                        ...doc.data(),
-                        createdAt: doc.data().createdAt?.toDate(),
-                    }));
-                    setNotes(newNotes);
-                });
-            } else {
-                setNotes([]);
-                if (unsubscribeNotes) {
-                    unsubscribeNotes();
-                    unsubscribeNotes = null;
-                }
+        const formatTime = (time) => {
+            if (time?.seconds) {
+                const date = time.toDate(); // Konversi dari Timestamp ke Date
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             }
-        });
-
-        return () => {
-            if (unsubscribeNotes) unsubscribeNotes();
-            unsubscribeAuth();
+            return "Unknown Time"; // Default jika waktu tidak tersedia
         };
-    }, []);
 
-    // Atur tampilan DateTimePicker
-    const showDatePicker = () => setDatePickerVisibility(true);
-    const hideDatePicker = () => setDatePickerVisibility(false);
-    const handleConfirm = (date: any) => {
-        setSelectedDate(date);
-        hideDatePicker();
-    };
+        // Fungsi untuk mendapatkan nama hari
+        const getDayName = (time) => {
+            if (time?.seconds) {
+                const date = time.toDate(); // Konversi dari Timestamp ke Date
+                return format(date, "EEEE"); // Mengambil nama hari dari date-fns (e.g., "Monday")
+            }
+            return "Unknown Day"; // Default jika waktu tidak tersedia
+        };
+        // Ambil data dari Firestore
+        useEffect(() => {
+            const auth = getAuth();
+            const db = getFirestore(FIREBASE_APP);
+            let unsubscribeNotes: any = null;
+        
+            const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    const userId = user.uid;
+                    const userNotesCollection = collection(db, `users/${userId}/notes`);
+                    const q = query(userNotesCollection, orderBy("createdAt", "desc"));
+        
+                     unsubscribeNotes = onSnapshot(q, (snapshot) => {
+                    const newNotes = snapshot.docs.map((doc) => {
+                        const data = doc.data();
+                        const time = data.time?.toDate(); // Konversi Timestamp ke Date
+                        return {
+                            id: doc.id,
+                            ...data,
+                            formattedDate: time ? format(time, "EEEE") : "Unknown Day", // Dapatkan nama hari
+                            formattedTime: time ? format(time, "hh:mm a") : "Unknown Time", // Format waktu
+                        };
+                    });
+                    setNotes(newNotes);
+                    });
+                } else {
+                    setNotes([]);
+                    if (unsubscribeNotes) {
+                        unsubscribeNotes();
+                        unsubscribeNotes = null;
+                    }
+                }
+            });
+        
+            return () => {
+                if (unsubscribeNotes) unsubscribeNotes();
+                unsubscribeAuth();
+            };
+        }, []);
+        
 
-    // Grupkan berdasarkan nama hari
-    const taskGroup = notes.reduce((acc, task) => {
-        const dayName = getDayName(task.createdAt);
-        acc[dayName] = acc[dayName] ? [...acc[dayName], task] : [task];
-        return acc;
-    }, {});
+        // Atur tampilan DateTimePicker
+        const showDatePicker = () => setDatePickerVisibility(true);
+        const hideDatePicker = () => setDatePickerVisibility(false);
+        const handleConfirm = (date: any) => {
+            setSelectedDate(date);
+            hideDatePicker();
+        };
 
-    return (
-        <ScrollView style={styles.container}>
-            <View style={styles.containerCalendar}>
-                <Calendar
-                    markedDates={{
-                        [selectedDate.toISOString().split('T')[0]]: {
-                            selected: true,
-                            selectedColor: '#F4AB05',
-                        },
-                    }}
-                    theme={{
-                        backgroundColor: '#141d20',
-                        calendarBackground: '#141d20',
-                        textSectionTitleColor: '#b6c1cd',
-                        selectedDayBackgroundColor: '#F4AB05',
-                        selectedDayTextColor: '#ffffff',
-                        todayTextColor: '#F4AB05',
-                        dayTextColor: '#ffffff',
-                        textDisabledColor: '#d9e1e8',
-                        arrowColor: '#F4AB05',
-                        monthTextColor: '#F4AB05',
-                        textDayFontFamily: 'figtree',
-                        textMonthFontFamily: 'figtree',
-                        textDayHeaderFontFamily: 'figtree',
-                        textDayFontSize: 16,
-                        textMonthFontSize: 18,
-                        textDayHeaderFontSize: 14,
-                    }}
-                    style={styles.calendar}
-                />
-                <DateTimePickerModal
-                    isVisible={isDatePickerVisible}
-                    mode="datetime"
-                    onConfirm={handleConfirm}
-                    onCancel={hideDatePicker}
-                />
-            </View>
+        // Grupkan berdasarkan nama hari
+        const taskGroup = notes.reduce((acc, task) => {
+            const dayName = getDayName(task.createdAt);
+            acc[dayName] = acc[dayName] ? [...acc[dayName], task] : [task];
+            return acc;
+        }, {});
 
-            <View style={styles.divider}></View>
+        return (
+            <ScrollView style={styles.container}>
+                <View style={styles.containerCalendar}>
+                    <Calendar
+                        markedDates={{
+                            [selectedDate.toISOString().split('T')[0]]: {
+                                selected: true,
+                                selectedColor: '#F4AB05',
+                            },
+                        }}
+                        theme={{
+                            backgroundColor: '#141d20',
+                            calendarBackground: '#141d20',
+                            textSectionTitleColor: '#b6c1cd',
+                            selectedDayBackgroundColor: '#F4AB05',
+                            selectedDayTextColor: '#ffffff',
+                            todayTextColor: '#F4AB05',
+                            dayTextColor: '#ffffff',
+                            textDisabledColor: '#d9e1e8',
+                            arrowColor: '#F4AB05',
+                            monthTextColor: '#F4AB05',
+                            textDayFontFamily: 'figtree',
+                            textMonthFontFamily: 'figtree',
+                            textDayHeaderFontFamily: 'figtree',
+                            textDayFontSize: 16,
+                            textMonthFontSize: 18,
+                            textDayHeaderFontSize: 14,
+                        }}
+                        style={styles.calendar}
+                    />
+                    <DateTimePickerModal
+                        isVisible={isDatePickerVisible}
+                        mode="datetime"
+                        onConfirm={handleConfirm}
+                        onCancel={hideDatePicker}
+                    />
+                </View>
 
-            <View style={styles.containerReminder}>
-                {Object.keys(taskGroup).map((day) => (
-                    <View key={day}>
-                        <Text style={styles.groupTitle}>{day}</Text>
-                        {taskGroup[day].map((item: any) => (
-                            <TouchableOpacity onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}>
-                            <View style={styles.taskCard} key={item.id}>
-                                <View style={styles.indicator} />
-                                <View style={styles.taskContent}>
-                                    <Text style={styles.taskTitle}>{item.title}</Text>
-                                    <View style={styles.timeCategoryContainer}>
-                                        <Text style={{ color: '#fff' }}>{day}</Text>
-                                        <View style={styles.separatorLine} />
-                                        <Text style={styles.taskTime}>{item.time}</Text>
-                                        <View style={styles.separatorLine} />
-                                        <View style={styles.categoryContainer}>
-                                            <MaterialCommunityIcons
-                                                name="folder"
-                                                size={16}
-                                                color="#fff"
-                                            />
-                                            <Text style={styles.categoryText}>
-                                                {item.category || "No Category"}
-                                            </Text>
+                <View style={styles.divider}></View>
+
+                <View style={styles.containerReminder}>
+                    {Object.keys(taskGroup).map((day) => (
+                        <View key={day}>
+                            <Text style={styles.groupTitle}>{day}</Text>
+                            {taskGroup[day].map((item: any) => (
+                                <TouchableOpacity key={item.id} onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}>
+                                    <View style={styles.taskCard}>
+                                        <View style={styles.indicator} />
+                                        <View style={styles.taskContent}>
+                                            <Text style={styles.taskTitle}>{item.title}</Text>
+                                            <View style={styles.timeCategoryContainer}>
+                                                <Text style={{ color: '#fff' }}>{item.formattedDate}</Text>
+                                                <View style={styles.separatorLine} />
+                                                <Text style={styles.taskTime}>{formatTime(item.time)}</Text>
+                                                <View style={styles.separatorLine} />
+                                                <View style={styles.categoryContainer}>
+                                                    <MaterialCommunityIcons
+                                                        name="folder"
+                                                        size={16}
+                                                        color="#fff"
+                                                    />
+                                                    <Text style={styles.categoryText}>
+                                                        {item.category || "No Category"}
+                                                    </Text>
+                                                </View>
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
-                            </View>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                ))}
-            </View>
-        </ScrollView>
-    );
-};
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    ))}
+                </View>
+            </ScrollView>
+        );
+    };
+
 
 
 const styles = StyleSheet.create({

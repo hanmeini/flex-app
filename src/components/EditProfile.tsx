@@ -13,6 +13,8 @@ import { doc, setDoc, getFirestore, getDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FIREBASE_AUTH } from '../../FirebaseConfig';
 
 const EditProfile = ({ route, navigation }: any) => {
   const { userData } = route.params;
@@ -104,16 +106,18 @@ const EditProfile = ({ route, navigation }: any) => {
     }
   };
 
-  // Fungsi logout
   const handleLogout = async () => {
     try {
-      await auth.signOut();
-      navigation.replace('Login');
+        await FIREBASE_AUTH.signOut(); // Logout dari Firebase
+        await AsyncStorage.removeItem('loggedInUser'); // Hapus user dari AsyncStorage
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] }); // Arahkan ke Login
     } catch (error) {
-      Alert.alert('Error', 'Failed to logout: ' + error.message);
+        console.error('Logout Error:', error);
+        alert('Logout failed: ' + error.message);
     }
-  };
+};
 
+  
   if (loading) {
     return (
       <View style={styles.container}>
@@ -121,6 +125,7 @@ const EditProfile = ({ route, navigation }: any) => {
       </View>
     );
   }
+  
 
   return (
     <View style={styles.container}>

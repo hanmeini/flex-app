@@ -24,6 +24,7 @@ import { Picker } from '@react-native-picker/picker';
 import { ProgressBar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
 
 const Profile = ({ navigation }: { navigation: any }) => {
   const [userData, setUserData] = useState<any>(null);
@@ -64,17 +65,22 @@ const Profile = ({ navigation }: { navigation: any }) => {
           const q = query(userNotesCollection, orderBy("createdAt", "desc"));
 
           unsubscribeNotes = onSnapshot(q, (snapshot) => {
-            const newTasks = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
+            const newTasks = snapshot.docs.map((doc) => {
+              const data = doc.data();
+              console.log('Fetched Task Data:', data); // Debug log
+              return {
+                id: doc.id,
+                ...data,
+                time: data.time ? data.time.toDate() : null, // Konversi atau null jika tidak ada
+              };
+            });
             setTasks(newTasks);
-          });
+          });          
         } catch (error) {
-          console.error("Error fetching user data:", error);
+          console.error('Error fetching user data:', error);
         }
       } else {
-        // Pengguna keluar, reset data
+        // Reset data jika pengguna keluar
         setUserData(null);
         setTasks([]);
       }
@@ -99,23 +105,41 @@ const Profile = ({ navigation }: { navigation: any }) => {
   const notCompletedProgress = totalTasks > 0 ? notCompletedTasks / totalTasks : 0;
 
 
-  const renderTask = (item:any) => (
-    <View key={item.id} style={styles.taskCard}>
-      <View style={styles.taskContent}>
-        <Text style={styles.taskTitle}>{item.title || "Title Empty"}</Text>
-        <View style={styles.cardDeskripsi}>
-          <Text style={styles.taskDate}>
-             {item.time}
-          </Text>
-          <View style={styles.separatorLine} />
-          <Text style={styles.taskCategory}>
-            <MaterialCommunityIcons name='folder' size={16} color="#ffff" style={{ marginRight:2 }} /> 
-            {item.category}
-          </Text>
+  const renderTask = ({ item }) => {
+    if (!item) return null; // Tambahkan validasi item
+    console.log('Rendering Task:', item);
+    const formattedDate = item.time ? format(item.time, 'EEEE') : 'No Date';
+    const formattedTime = item.time ? format(item.time, 'HH:mm') : 'No Time';    
+    return (
+      <TouchableOpacity
+        key={item.id}
+        onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}
+      >
+        <View style={styles.taskCard}>
+          <View style={styles.taskContent}>
+            <Text style={styles.taskTitle}>{item.title || 'No Title'}</Text>
+            <View style={styles.cardDeskripsi}>
+              {/* Render waktu dengan format lokal */}
+              <Text style={styles.taskDate}>{formattedDate}</Text>
+              <View style={styles.separatorLine} />
+              <Text style={styles.taskDate}>{formattedTime}</Text>
+              <View style={styles.separatorLine} />
+              <Text style={styles.taskCategory}>
+                <MaterialCommunityIcons
+                  name="folder"
+                  size={16}
+                  color="#ffff"
+                  style={{ marginRight: 2 }}
+                />
+                {item.category || 'No Category'}
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
-    </View>
-  );
+      </TouchableOpacity>
+    );
+  };
+  
 
   if (loading) {
     return (
@@ -125,22 +149,24 @@ const Profile = ({ navigation }: { navigation: any }) => {
     );
   }
 
-  const filteredTasks = selectedFilter === 'Semua'
-  ? tasks
-  : tasks.filter((task) => {
-      if (!task.time) return false; // Abaikan catatan tanpa waktu
+  const filteredTasks =
+  selectedFilter === 'Semua'
+    ? tasks
+    : tasks.filter((task) => {
+        if (!task || !task.time) return false; // Pastikan task dan time ada
 
-      const now = new Date().toISOString(); // String waktu saat ini
-      let endRange = null;
+        const now = new Date();
+        let endRange = null;
 
-      if (selectedFilter === 'Dalam 7 hari') {
-        endRange = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      } else if (selectedFilter === 'Dalam 30 hari') {
-        endRange = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      }
+        if (selectedFilter === 'Dalam 7 hari') {
+          endRange = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        } else if (selectedFilter === 'Dalam 30 hari') {
+          endRange = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        }
 
-      return endRange ? task.time >= now && task.time <= endRange : true;
-    });
+        return endRange ? task.time >= now && task.time <= endRange : true;
+      });
+
 
 
 

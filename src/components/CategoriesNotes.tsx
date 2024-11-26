@@ -11,20 +11,15 @@ import {
 import { getAuth } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { format, isPast, isFuture, isToday } from 'date-fns';
 
-const parseTime = (time) => {
-    const [hours, minutes] = time.split(' ')[0].split(':').map(num => parseInt(num));
-    const isPM = time.includes('PM');
-    return isPM ? (hours % 12 + 12) * 60 + minutes : hours * 60 + minutes;
-};
-
-const CategoryNotes = ({ navigation }) => { // Added navigation prop
+const CategoryNotes = ({ navigation }) => { 
     const route = useRoute();
-    const { category } = route.params; // Parameter kategori dari navigasi
+    const { category } = route.params;
     const [notes, setNotes] = useState([]);
     const [selectedFilter, setSelectedFilter] = useState("All");
 
-    const filters = ['All', 'Upcoming', 'In Progress', 'Completed'];
+    const filters = ['All', 'Upcoming', 'Overdue', 'Completed'];
 
     useEffect(() => {
         const auth = getAuth();
@@ -37,13 +32,17 @@ const CategoryNotes = ({ navigation }) => { // Added navigation prop
 
         const db = getFirestore(FIREBASE_APP);
         const userNotesCollection = collection(db, `users/${userId}/notes`);
-        const q = query(userNotesCollection, where("category", "==", category)); // Filter kategori
+        const q = query(userNotesCollection, where("category", "==", category));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const filteredNotes = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
+            const filteredNotes = snapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    time: data.time?.toDate(), // Convert Firestore Timestamp to JavaScript Date
+                };
+            });
             setNotes(filteredNotes);
         });
 
@@ -51,18 +50,17 @@ const CategoryNotes = ({ navigation }) => { // Added navigation prop
     }, [category]);
 
     const currentTime = new Date();
-    const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
     // Filter tasks based on status
     const filterTasks = () => {
         if (selectedFilter === 'Upcoming') {
-            return notes.filter((task) => parseTime(task.time) > currentMinutes && !task.completed);
-        } else if (selectedFilter === 'In Progress') {
-            return notes.filter((task) => parseTime(task.time) <= currentMinutes && !task.completed);
+            return notes.filter((task) => task.time && isFuture(task.time) && !task.completed);
+        } else if (selectedFilter === 'Overdue') {
+            return notes.filter((task) => task.time && isPast(task.time) && !isToday(task.time) && !task.completed);
         } else if (selectedFilter === 'Completed') {
             return notes.filter((task) => task.completed);
         } else if (selectedFilter === 'All') {
-            return notes; // No filtering for "All"
+            return notes;
         }
         return notes;
     };
@@ -72,23 +70,25 @@ const CategoryNotes = ({ navigation }) => { // Added navigation prop
     const renderTask = ({ item }) => {
         const indicatorColor = item.completed
             ? '#4CAF50'
-            : parseTime(item.time) > currentMinutes
+            : item.time && isFuture(item.time)
             ? '#FFA500'
             : '#FF6B6B';
 
+        const formattedDate = item.time ? format(item.time, 'EEEE') : 'No Date';
+        const formattedTime = item.time ? format(item.time, 'HH:mm') : 'No Time';
+
         return (
             <TouchableOpacity 
-                onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })} // Navigate to TaskDetail
+                onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}
                 style={styles.taskCard}
             >
                 <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
                 <View style={styles.taskContent}>
-                    <Text style={[styles.taskTitle]}>
-                        {item.title}
-                    </Text>
+                    <Text style={styles.taskTitle}>{item.title}</Text>
                     <View style={styles.timeCategoryContainer}>
-                        <Text style={styles.taskTime}>{item.time}</Text>
+                        <Text style={styles.taskTime}>{formattedDate}</Text>
                         <View style={styles.separatorLine} />
+                        <Text style={styles.taskTime}>{formattedTime}</Text>
                         <View style={styles.categoryContainer}>
                             <MaterialCommunityIcons name="folder" size={16} color="#fff" />
                             <Text style={styles.categoryText}>{item.category}</Text>
@@ -126,10 +126,11 @@ const CategoryNotes = ({ navigation }) => { // Added navigation prop
     );
 };
 
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1A2529',
+        backgroundColor: '#141d20',
         paddingHorizontal: 15,
         paddingTop: 60,
     },

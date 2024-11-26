@@ -12,6 +12,7 @@ const LoginScreen = ({ navigation }: any) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [secureText, setSecureText] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Inisialisasi state
 
   // Initialize the Google Auth request
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -26,21 +27,31 @@ const LoginScreen = ({ navigation }: any) => {
   };
 
   const signIn = async () => {
-    setLoading(true);
+    if (!email || !password) {
+      alert('Please fill in all fields');
+      return;
+    }
+  
     try {
-      const response = await signInWithEmailAndPassword(auth, email, password);
-      console.log(response);
+      setLoading(true);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      console.log('Logged in user:', user);
+  
       await AsyncStorage.setItem('isLoggedIn', 'true');
-      setTimeout(() => {
-        navigation.navigate('Flexido');
-      }, 500);
-    } catch (error: any) {
-      console.log(error);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Flexido' }],
+      });      
+    } catch (error) {
+      console.error('Login Error:', error);
       alert('Login failed: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
+  
+
 
   const toggleSecureText = () => {
     setSecureText(!secureText);
@@ -75,26 +86,23 @@ const LoginScreen = ({ navigation }: any) => {
   };
 
   useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
-
-      signInWithCredential(auth, credential)
-        .then((userCredential) => {
-          console.log('User signed in with Google:', userCredential);
-          AsyncStorage.setItem('isLoggedIn', 'true');
-          navigation.navigate('Flexido');
-        })
-        .catch((error) => {
-          console.log('Firebase Sign-In Error:', error);
-        });
-    }
-  }, [response]);
+    const checkLoginStatus = async () => {
+      try {
+        const loggedInStatus = await AsyncStorage.getItem('isLoggedIn');
+        setIsLoggedIn(loggedInStatus === 'true');
+      } catch (error) {
+        console.error('Error checking login status:', error);
+      }
+    };
+  
+    checkLoginStatus();
+  }, []);
+  
 
   return (
     <View style={styles.container}>
       {/* Logo */}
-      <Image source={require('../../assets/images/logo (2).png')} style={styles.logo} />
+      <Image source={require('../../assets/images/logo2.png')} style={styles.logo} />
 
       {/* Title */}
       <Text style={styles.title}>Login and Be Productive!</Text>

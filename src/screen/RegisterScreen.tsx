@@ -41,7 +41,7 @@ const RegisterScreen = ({ navigation }:any) => {
     <View style={styles.container}>
       {/* Logo */}
       <Image
-        source={require("../../assets/images/logo (2).png")}
+        source={require("../../assets/images/logo2.png")}
         style={styles.logo}
       />
 
