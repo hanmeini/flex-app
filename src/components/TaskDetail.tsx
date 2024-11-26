@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { FIREBASE_APP } from "../../FirebaseConfig";
 
@@ -30,12 +30,8 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
 
   // Handle date picker confirmation
   const handleConfirm = (date: Date) => {
-    setReminderTime(
-      `${date.toLocaleDateString("en-GB")} ${date.toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`
-    );
+    const timestamp = Timestamp.fromDate(date); // Create Firestore Timestamp
+    setReminderTime(timestamp); // Store the Timestamp directly
     hideDatePicker();
   };
 
@@ -43,51 +39,63 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
     const fetchTaskDetail = async () => {
       const auth = getAuth();
       const userId = auth.currentUser?.uid;
-
+  
       if (!userId) {
         console.error("User not logged in");
         return;
       }
-
+  
       const db = getFirestore(FIREBASE_APP);
       const taskRef = doc(db, `users/${userId}/notes`, taskId);
       const taskSnap = await getDoc(taskRef);
-
+  
       if (taskSnap.exists()) {
         const data = taskSnap.data();
+        
+        // Periksa apakah data.time adalah Timestamp dan konversi menjadi Date jika perlu
+        let time;
+        if (data.time && data.time.toDate) {
+          // Jika data.time adalah Timestamp, konversikan ke Date
+          time = data.time.toDate();
+        } else {
+          // Jika sudah Date, cukup pakai langsung
+          time = data.time;
+        }
+  
         setTask(data);
         setTitle(data.title);
         setDescription(data.description || "");
-        setReminderTime(data.time || "No time set");
+        setReminderTime(time ? time.toLocaleString() : "No time set"); // Format waktu sesuai
         setSelectedCategory(data.category || "Personal");
       } else {
         console.error("No such task!");
       }
     };
-
+  
     fetchTaskDetail();
   }, [taskId]);
+  
 
   const handleUpdateTask = async () => {
     const auth = getAuth();
     const userId = auth.currentUser?.uid;
-
+  
     if (!userId) {
       console.error("User not logged in");
       return;
     }
-
+  
     try {
       const db = getFirestore(FIREBASE_APP);
       const taskRef = doc(db, `users/${userId}/notes`, taskId);
-
+  
       await updateDoc(taskRef, {
         title,
         description,
-        time: reminderTime || "No time set",
+        time: reminderTime || null, // Reminder time as a Timestamp
         category: selectedCategory,
       });
-
+  
       Alert.alert("Success", "Task updated successfully!");
       navigation.goBack();
     } catch (error) {
@@ -95,6 +103,7 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
       Alert.alert("Error", "Failed to update task");
     }
   };
+  
 
   if (!task) {
     return (

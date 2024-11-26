@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 const Profile = ({ navigation }: { navigation: any }) => {
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [photoURL, setPhotoURL] = useState(userData?.photoURL || '');
   const [tasks, setTasks] = useState<any[]>([]); // Store all tasks in one array
   const [selectedFilter, setSelectedFilter] = useState('Semua');
 
@@ -47,17 +48,20 @@ const Profile = ({ navigation }: { navigation: any }) => {
 
         try {
           // Ambil data profil pengguna
-          const profileRef = doc(db, `users/${userId}/profile/profilInfo`);
+          const profileRef = doc(db, `users/${userId}/profile/8Js4h1TvZBMGR6MngvLg`);
           const profileSnap = await getDoc(profileRef);
 
           if (profileSnap.exists()) {
-            setUserData(profileSnap.data());
+            const profileData = profileSnap.data();
+            setUserData(profileData); // Simpan data pengguna ke state
+            setPhotoURL(profileData.photoURL || ''); // Set foto profil pengguna
           } else {
             // Fallback jika data profil tidak ditemukan
             setUserData({
               fullName: user.email, // Gunakan email sebagai nama
               photoURL: '', // Default foto profil kosong
             });
+            setPhotoURL(''); // Set default foto kosong
           }
 
           // Ambil catatan pengguna secara real-time
@@ -65,17 +69,20 @@ const Profile = ({ navigation }: { navigation: any }) => {
           const q = query(userNotesCollection, orderBy("createdAt", "desc"));
 
           unsubscribeNotes = onSnapshot(q, (snapshot) => {
-            const newTasks = snapshot.docs.map((doc) => {
-              const data = doc.data();
-              console.log('Fetched Task Data:', data); // Debug log
-              return {
-                id: doc.id,
-                ...data,
-                time: data.time ? data.time.toDate() : null, // Konversi atau null jika tidak ada
-              };
-            });
-            setTasks(newTasks);
-          });          
+            if (snapshot.empty) {
+              setTasks([]);
+            } else {
+              const newTasks = snapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  ...data,
+                  time: data.time ? data.time.toDate() : null,
+                };
+              });
+              setTasks(newTasks);
+            }
+          });
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
@@ -124,15 +131,13 @@ const Profile = ({ navigation }: { navigation: any }) => {
               <View style={styles.separatorLine} />
               <Text style={styles.taskDate}>{formattedTime}</Text>
               <View style={styles.separatorLine} />
-              <Text style={styles.taskCategory}>
-                <MaterialCommunityIcons
+              <MaterialCommunityIcons
                   name="folder"
                   size={16}
                   color="#ffff"
-                  style={{ marginRight: 2 }}
+                  style={{ marginRight: 10 }}
                 />
-                {item.category || 'No Category'}
-              </Text>
+              <Text style={styles.taskCategory}>{item.category || 'No Category'}</Text>
             </View>
           </View>
         </View>
@@ -150,25 +155,18 @@ const Profile = ({ navigation }: { navigation: any }) => {
   }
 
   const filteredTasks =
-  selectedFilter === 'Semua'
+  selectedFilter === 'All'
     ? tasks
     : tasks.filter((task) => {
-        if (!task || !task.time) return false; // Pastikan task dan time ada
+        if (!task || !task.time) return false;
 
         const now = new Date();
-        let endRange = null;
+        const endRange = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        if (selectedFilter === 'Dalam 7 hari') {
-          endRange = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        } else if (selectedFilter === 'Dalam 30 hari') {
-          endRange = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        }
-
-        return endRange ? task.time >= now && task.time <= endRange : true;
+        return selectedFilter === '7 Days'
+          ? task.time >= now && task.time <= endRange
+          : true;
       });
-
-
-
 
   return (
     <ScrollView style={styles.container}>
@@ -178,8 +176,8 @@ const Profile = ({ navigation }: { navigation: any }) => {
       >
         <Image
           source={
-            userData?.photoURL
-              ? { uri: userData.photoURL }
+            photoURL
+              ? { uri: photoURL }
               : require('../../assets/images/pp-kosong.jpg')
           }
           style={styles.profileImage}
@@ -188,7 +186,7 @@ const Profile = ({ navigation }: { navigation: any }) => {
           <Text style={styles.namaText}>
             {userData?.fullName || 'Profile'}
           </Text>
-          <Ionicons name='chevron-forward-outline' size={25}/>
+          <Ionicons name='chevron-forward-outline' size={25} color='#fff'/>
         </View>
       </TouchableOpacity>
 
@@ -220,10 +218,10 @@ const Profile = ({ navigation }: { navigation: any }) => {
           onValueChange={(itemValue) => setSelectedFilter(itemValue)}
         >
           <Picker.Item label="All" value="All" /> 
-          <Picker.Item label="Hide" value="Dalam 7 hari" />
+          <Picker.Item label="7 Days" value="7 Days" />
         </Picker>
 
-        {filteredTasks.map((note) => renderTask(note))}
+        {filteredTasks.map((task) => renderTask({ item: task }))}
       </View>
     </ScrollView>
   );

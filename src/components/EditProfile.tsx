@@ -9,12 +9,13 @@ import {
   Alert,
 } from 'react-native';
 import { getAuth, updateProfile } from 'firebase/auth';
-import { doc, setDoc, getFirestore, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getFirestore, getDoc, updateDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FIREBASE_AUTH } from '../../FirebaseConfig';
+import { FIREBASE_APP, FIREBASE_AUTH } from '../../FirebaseConfig';
+import { Ionicons } from '@expo/vector-icons';
 
 const EditProfile = ({ route, navigation }: any) => {
   const { userData } = route.params;
@@ -78,33 +79,29 @@ const EditProfile = ({ route, navigation }: any) => {
 
   // Menyimpan data ke Firestore dan memperbarui Auth
   const handleSave = async () => {
-    if (!user) {
-      Alert.alert('Error', 'User not logged in');
-      navigation.replace('Login');
-      return;
-    }
-
     try {
-      const profileRef = doc(firestore, `users/${user.uid}/profile/8Js4h1TvZBMGR6MngvLg`);
-
-      // Update Firebase Auth
-      await updateProfile(user, { displayName: fullName, photoURL });
-
-      // Update Firestore
-      await setDoc(profileRef, {
-        fullName,
-        photoURL,
-        dob,
-        phone,
-      });
-
-      Alert.alert('Success', 'Profile updated successfully!');
-      navigation.navigate('Profile');
+      const user = auth.currentUser;
+  
+      if (user) {
+        const userId = user.uid;
+  
+        // Simpan data baru ke Firebase
+        const profileRef = doc(firestore, `users/${userId}/profile/8Js4h1TvZBMGR6MngvLg`);
+        await updateDoc(profileRef, {
+          photoURL,
+          fullName,
+          dob,
+          phone,
+        });
+  
+        // Navigasi kembali ke Profile dengan parameter yang diperbarui
+        navigation.navigate('Profile', { updatedPhotoURL: photoURL });
+      }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile');
+      console.error('Error saving profile:', error);
     }
   };
+  
 
   const handleLogout = async () => {
     try {
@@ -129,7 +126,7 @@ const EditProfile = ({ route, navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={pickImage}>
+     <TouchableOpacity style={styles.profileImageContainer} onPress={pickImage}>
         <Image
           source={
             photoURL
@@ -138,6 +135,9 @@ const EditProfile = ({ route, navigation }: any) => {
           }
           style={styles.profileImage}
         />
+        <TouchableOpacity style={styles.editIconContainer} onPress={pickImage}>
+          <Ionicons name="pencil" size={20} color="#fff" />
+        </TouchableOpacity>
       </TouchableOpacity>
       <Text style={styles.datadiri}>Personal Data</Text>
       <View style={styles.containerdata}>
@@ -188,12 +188,31 @@ const styles = StyleSheet.create({
     padding: 30,
     backgroundColor: '#1A2529',
   },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignSelf: 'center',
+  profileImageContainer: {
+    position: 'relative', // Container relatif terhadap posisi internal elemen
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 60,
+  },
+  profileImage: {
+    width: 120, // Ukuran gambar profil
+    height: 120,
+    borderRadius: 60, // Membuat gambar berbentuk lingkaran
+  },
+  editIconContainer: {
+    position: 'absolute', // Menempatkan ikon secara absolut
+    bottom: 0, // Pastikan ikon berada tepat di bawah
+    right: 120, // Ikon berada di kanan
+    backgroundColor: '#F4AB05', // Warna latar belakang ikon
+    padding: 8, // Padding di sekitar ikon
+    borderRadius: 16, // Membuat lingkaran sempurna
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3, // Efek bayangan untuk Android
+    shadowColor: '#000', // Efek bayangan untuk iOS
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   containerdata: {
     padding: 10,

@@ -157,8 +157,6 @@ const Note = ({ navigation }: any) => {
 
 export default Note;
 
-
-
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#141d20",

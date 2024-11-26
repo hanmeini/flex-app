@@ -28,6 +28,13 @@
             }
             return "Unknown Time"; // Default jika waktu tidak tersedia
         };
+        const getFormattedDate = (time) => {
+            if (time?.seconds) {
+                const date = time.toDate(); // Konversi dari Timestamp ke Date
+                return format(date, "EEEE, dd MMMM yyyy"); // Format: "Senin, 26 November 2024"
+            }
+            return "Unknown Date"; // Default jika waktu tidak tersedia
+        };
 
         // Fungsi untuk mendapatkan nama hari
         const getDayName = (time) => {
@@ -85,11 +92,30 @@
             setSelectedDate(date);
             hideDatePicker();
         };
+        const formatDateForCalendar = (time) => {
+            if (time?.seconds) {
+                const date = time.toDate();
+                return format(date, "yyyy-MM-dd"); // Format tanggal menjadi '2024-11-29'
+            }
+            return null;
+        };
+           // Menandai tanggal yang memiliki catatan
+    const markedDates = notes.reduce((acc, task) => {
+        const formattedDate = formatDateForCalendar(task.time); // Format tanggal untuk kalender
+        if (formattedDate) {
+            acc[formattedDate] = {
+                marked: true,
+                dotColor: '#F4AB05', // Warna titik kuning
+                activeOpacity: 0, // Tidak aktif, hanya menampilkan titik
+            };
+        }
+        return acc;
+    }, {});
 
         // Grupkan berdasarkan nama hari
         const taskGroup = notes.reduce((acc, task) => {
-            const dayName = getDayName(task.createdAt);
-            acc[dayName] = acc[dayName] ? [...acc[dayName], task] : [task];
+            const timeName = getFormattedDate(task.time); // Gunakan waktu untuk grupkan berdasarkan hari dan tanggal
+            acc[timeName] = acc[timeName] ? [...acc[timeName], task] : [task];
             return acc;
         }, {});
 
@@ -97,12 +123,7 @@
             <ScrollView style={styles.container}>
                 <View style={styles.containerCalendar}>
                     <Calendar
-                        markedDates={{
-                            [selectedDate.toISOString().split('T')[0]]: {
-                                selected: true,
-                                selectedColor: '#F4AB05',
-                            },
-                        }}
+                        markedDates={markedDates} // Menandai tanggal dengan catatan
                         theme={{
                             backgroundColor: '#141d20',
                             calendarBackground: '#141d20',
@@ -134,10 +155,13 @@
                 <View style={styles.divider}></View>
 
                 <View style={styles.containerReminder}>
-                    {Object.keys(taskGroup).map((day) => (
-                        <View key={day}>
-                            <Text style={styles.groupTitle}>{day}</Text>
-                            {taskGroup[day].map((item: any) => (
+                {Object.keys(taskGroup).length === 0 ? (
+                    <Text style={styles.noNotesText}>Empty Notes. Make Your Notes</Text>
+                ) : (
+                    Object.keys(taskGroup).map((time) => (
+                        <View key={time}>
+                            <Text style={styles.groupTitle}>{time}</Text>
+                            {taskGroup[time].map((item: any) => (
                                 <TouchableOpacity key={item.id} onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}>
                                     <View style={styles.taskCard}>
                                         <View style={styles.indicator} />
@@ -164,8 +188,9 @@
                                 </TouchableOpacity>
                             ))}
                         </View>
-                    ))}
-                </View>
+                    ))
+                )}
+            </View>
             </ScrollView>
         );
     };
@@ -186,6 +211,12 @@ const styles = StyleSheet.create({
     label: {
         color: '#fff',
         marginBottom: 10,
+    },
+    noNotesText: {
+        color: '#fff',
+        fontSize: 16,
+        textAlign: 'center',
+        marginTop: 20,
     },
     dateTimeContainer: {
         flexDirection: 'row',
@@ -225,8 +256,8 @@ const styles = StyleSheet.create({
     },
     groupTitle: {
         color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 15,
+        fontWeight: '500',
         marginBottom: 10,
     },
     taskCard: {
