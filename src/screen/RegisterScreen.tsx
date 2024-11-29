@@ -36,6 +36,9 @@ const RegisterScreen = ({ navigation }:any) => {
       setLoading(false);
     }
   };
+  const toggleSecureText = () => {
+    setSecureText(!secureText);
+  };
 
   return (
     <View style={styles.container}>
@@ -72,6 +75,13 @@ const RegisterScreen = ({ navigation }:any) => {
           value={password} // Tambahkan ini
           onChangeText={(text) => setPassword(text)} // Tambahkan ini
         />
+        <IconButton
+        icon={secureText ? 'eye-off' : 'eye'}
+        size={25}
+        onPress={toggleSecureText}
+        style={styles.icon}
+        iconColor="#d3d3d3"
+      />
       </View>
 
       <IconButton size={25} style={styles.icon} iconColor="#d3d3d3" />
@@ -81,14 +91,14 @@ const RegisterScreen = ({ navigation }:any) => {
         <Text style={styles.registerButtonText}>Sign Up</Text>
       </TouchableOpacity>
 
-      {/* OR Divider */}
+      {/* OR Divider
       <View style={styles.orContainer}>
         <View style={styles.line} />
         <Text style={styles.orText}>Or Sign Up with</Text>
         <View style={styles.line} />
-      </View>
+      </View> */}
 
-      {/* Social Login Options */}
+      {/* Social Login Options
       <View style={styles.socialLoginContainer}>
         <TouchableOpacity style={styles.socialButton}>
           <Image
@@ -97,7 +107,7 @@ const RegisterScreen = ({ navigation }:any) => {
           />
           <Text style={styles.socialButtonText}>Sign Up with Google</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       {/* Registration Link */}
       <TouchableOpacity style={styles.registerContainer} onPress={handleNext}>
@@ -155,11 +165,11 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   icon: {
-    position: "absolute",
+    position: 'absolute',
     right: 10,
-    top: "50%",
-    marginRight: 25,
-    transform: [{ translateY: 0 }], // Untuk memposisikan ikon di tengah input
+    top: '50%',
+    marginRight: 10,
+    transform: [{ translateY: -30 }], // Untuk memposisikan ikon di tengah input
   },
   logo: {
     width: 100,

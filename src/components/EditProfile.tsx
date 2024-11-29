@@ -85,22 +85,39 @@ const EditProfile = ({ route, navigation }: any) => {
       if (user) {
         const userId = user.uid;
   
-        // Simpan data baru ke Firebase
+        // Referensi dokumen profile
         const profileRef = doc(firestore, `users/${userId}/profile/8Js4h1TvZBMGR6MngvLg`);
-        await updateDoc(profileRef, {
-          photoURL,
-          fullName,
-          dob,
-          phone,
-        });
+        
+        // Periksa apakah dokumen sudah ada
+        const profileSnap = await getDoc(profileRef);
   
-        // Navigasi kembali ke Profile dengan parameter yang diperbarui
+        if (profileSnap.exists()) {
+          // Jika dokumen ada, perbarui dengan updateDoc
+          await updateDoc(profileRef, {
+            photoURL,
+            fullName,
+            dob,
+            phone,
+          });
+        } else {
+          // Jika dokumen tidak ada, buat dokumen baru dengan setDoc
+          await setDoc(profileRef, {
+            photoURL,
+            fullName,
+            dob,
+            phone,
+          });
+        }
+  
+        // Navigasi kembali ke halaman Profile
         navigation.navigate('Profile', { updatedPhotoURL: photoURL });
       }
     } catch (error) {
       console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile. Please try again.');
     }
   };
+  
   
 
   const handleLogout = async () => {

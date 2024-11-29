@@ -142,14 +142,14 @@ const LoginScreen = ({ navigation }: any) => {
         <Text style={[styles.loginButtonText, { color: '#000000' }]}>Sign In</Text>
       </TouchableOpacity>
 
-      {/* OR Divider */}
+      {/* OR Divider
       <View style={styles.orContainer}>
         <View style={styles.line} />
         <Text style={styles.orText}>Or Continue with</Text>
         <View style={styles.line} />
-      </View>
+      </View> */}
 
-      {/* Social Login Options */}
+      {/* Social Login Options
       <View style={styles.socialLoginContainer}>
         <TouchableOpacity style={styles.socialButton} onPress={signInWithGoogle}>
           <Image
@@ -158,7 +158,7 @@ const LoginScreen = ({ navigation }: any) => {
           />
           <Text style={styles.socialButtonText}>Continue with Google</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       {/* Registration Link */}
       <TouchableOpacity style={styles.registerContainer} onPress={handleNext}>
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     right: 10,
     top: '50%',
     marginRight: 25,
-    transform: [{ translateY: -14 }], // Untuk memposisikan ikon di tengah input
+    transform: [{ translateY: 50 }], // Untuk memposisikan ikon di tengah input
   },
   forgotPassword: {
     marginTop: 10,

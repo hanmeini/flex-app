@@ -65,7 +65,7 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
         setTask(data);
         setTitle(data.title);
         setDescription(data.description || "");
-        setReminderTime(time ? time.toLocaleString() : "No time set"); // Format waktu sesuai
+        setReminderTime(data.time || null); // Simpan Timestamp langsung
         setSelectedCategory(data.category || "Personal");
       } else {
         console.error("No such task!");
@@ -97,7 +97,7 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
       });
   
       Alert.alert("Success", "Task updated successfully!");
-      navigation.goBack();
+      navigation.navigate("All Task");
     } catch (error) {
       console.error("Error updating task:", error);
       Alert.alert("Error", "Failed to update task");
@@ -117,7 +117,7 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
     <View style={styles.container}>
       {/* Input Title */}
       <View style={styles.judul}>
-        <Text style={styles.textJudul}>Judul</Text>
+        <Text style={styles.textJudul}>Title</Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
@@ -136,7 +136,7 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
             style={styles.formDeskripsi}
             value={description}
             onChangeText={setDescription}
-            placeholder="Ketikan sesuatu disini"
+            placeholder="Description"
             placeholderTextColor="#fff"
             multiline
           />
@@ -151,7 +151,7 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
               onPress={showDatePicker}
             >
               <Ionicons name="alarm-outline" size={25} color="#fff" />
-              <Text style={{ color: "#fff" }}>Pengingat</Text>
+              <Text style={{ color: "#fff" }}>Reminder</Text>
             </TouchableOpacity>
             {/* Update Task Button */}
             <TouchableOpacity style={styles.check} onPress={handleUpdateTask}>
@@ -161,7 +161,7 @@ const TaskDetailScreen = ({ route, navigation }: any) => {
 
           {/* Display Categories */}
           <View style={styles.categorySection}>
-            <Text style={styles.sectionTitle}>Pilih Kategori:</Text>
+            <Text style={styles.sectionTitle}>Choose Categories:</Text>
             <View style={styles.categoryRow}>
               {categories.map((category) => (
                 <TouchableOpacity

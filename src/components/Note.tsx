@@ -71,11 +71,11 @@ const Note = ({ navigation }: any) => {
     <View style={styles.container}>
       {/* Input Title */}
       <View style={styles.judul}>
-        <Text style={styles.textJudul}>Judul</Text>
+        <Text style={styles.textJudul}>Title</Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="Ketikan sesuatu disini"
+          placeholder="Type Here"
           placeholderTextColor="#fff"
           style={{ color:'#fff' }}
         />
@@ -90,7 +90,7 @@ const Note = ({ navigation }: any) => {
             style={styles.formDeskripsi}
             value={description}
             onChangeText={setDescription}
-            placeholder="Ketikan sesuatu disini"
+            placeholder="Description"
             placeholderTextColor="#fff"
             multiline
           />
@@ -105,7 +105,7 @@ const Note = ({ navigation }: any) => {
               onPress={showDatePicker}
             >
               <Ionicons name="alarm-outline" size={25} color="#fff" />
-              <Text style={{ color: "#fff" }}>Pengingat</Text>
+              <Text style={{ color: "#fff" }}>Reminder</Text>
             </TouchableOpacity>
             {/* Add Note Button */}
             <TouchableOpacity
@@ -118,7 +118,7 @@ const Note = ({ navigation }: any) => {
 
           {/* Display Categories */}
           <View style={styles.categorySection}>
-            <Text style={styles.sectionTitle}>Pilih Kategori:</Text>
+            <Text style={styles.sectionTitle}>Choose Categories:</Text>
             <View style={styles.categoryRow}>
               {categories.map((category) => (
                 <TouchableOpacity

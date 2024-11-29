@@ -101,34 +101,34 @@ const HomeScreen = () => {
 
   // Group tasks into Overdue, Today Tasks, and Completed Today
   const groupTasks = () => {
-    const overdue: any[] = [];
-    const todayTasks: any[] = [];
-    const completedToday: any[] = [];
-
+    const overdue = [];
+    const todayTasks = [];
+    const completedToday = [];
+  
     filteredTasks.forEach((task) => {
-      const taskTime = task.time?.toDate();
-      const taskDate = task.createdAt?.toDate();
-      const isToday = taskDate?.toDateString() === currentTime.toDateString(); // Apakah tugas dibuat hari ini
+      const taskTime = task.time?.toDate(); // Konversi dari Firestore Timestamp ke JavaScript Date
+      const isToday = taskTime?.toDateString() === currentTime.toDateString(); // Apakah tugas dijadwalkan hari ini
   
       if (task.completed) {
+        // Masukkan ke grup Completed Today jika status `completed` true dan dijadwalkan hari ini
         if (isToday) {
-          completedToday.push(task); // Completed today
+          completedToday.push(task);
         }
       } else {
-        if (taskTime) {
-          if (taskTime < currentTime) {
-            overdue.push(task); // Overdue jika waktu sudah berlalu
-          } else if (isToday) {
-            todayTasks.push(task); // Today's tasks jika dibuat hari ini dan belum selesai
-          }
+        // Masukkan ke grup Overdue jika tugas melewati waktu sekarang
+        if (taskTime && taskTime < currentTime) {
+          overdue.push(task);
         } else if (isToday) {
-          todayTasks.push(task); // Jika tidak ada `time`, tetap masukkan ke Today Tasks
+          // Masukkan ke grup Today Tasks jika belum selesai
+          todayTasks.push(task);
         }
       }
     });
   
     return { overdue, todayTasks, completedToday };
   };
+  
+
 
   const { overdue, todayTasks, completedToday } = groupTasks();
 
@@ -138,7 +138,7 @@ const HomeScreen = () => {
     </View>
   );
 
-  const toggleTaskCompletion = async (docId: string, currentStatus: any) => {
+  const toggleTaskCompletion = async (docId, currentStatus) => {
     try {
       const auth = getAuth();
       const userId = auth.currentUser?.uid;
@@ -149,10 +149,9 @@ const HomeScreen = () => {
       }
   
       const db = getFirestore(FIREBASE_APP);
-  
-      // Gunakan docId sebagai bagian dari path
       const taskRef = doc(db, `users/${userId}/notes/${docId}`);
   
+      // Toggle nilai completed
       await updateDoc(taskRef, { completed: !currentStatus });
   
       // Perbarui state lokal
@@ -165,6 +164,7 @@ const HomeScreen = () => {
       console.error("Error toggling completion:", error);
     }
   };
+  
   
   
 
@@ -196,16 +196,17 @@ const HomeScreen = () => {
   
     // Fungsi untuk menentukan warna indikator
     const getIndicatorColor = () => {
+      const taskTime = item.time?.toDate();
+
       if (item.completed) {
         return "#4CAF50"; // Hijau untuk tugas selesai
-      } else if (item.category?.toLowerCase() === 'overdue') {
-        return "#FF6B6B"; // Merah untuk overdue
-      } else if (item.category?.toLowerCase() === 'today') {
-        return "#FFC107"; // Kuning untuk hari ini
+      } else if (taskTime && taskTime < currentTime) {
+        return "#FF6B6B"; // Merah untuk overdue berdasarkan waktu
+      } else if (taskTime?.toDateString() === currentTime.toDateString()) {
+        return "#FFC107"; // Kuning untuk tugas hari ini
       }
-      return "#aaa"; // Warna default jika kategori tidak diketahui
+      return "#fff"; // Default warna putih
     };
-
     const formatTime = (timestamp) => {
       if (!timestamp?.seconds) return "Unknown Time";
       const date = timestamp.toDate();
@@ -388,6 +389,7 @@ const HomeScreen = () => {
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.taskList}
               scrollEnabled={false}
+              style={styles.flatlist}
             />
           )
         )}
@@ -545,6 +547,9 @@ const styles = StyleSheet.create({
   chevronIcon: {
     marginLeft: 10,   // Memberikan sedikit jarak antara teks dan ikon
   },
+  flatlist:{
+    marginBottom:40,
+  }
   
 });
 

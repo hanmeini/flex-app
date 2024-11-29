@@ -156,7 +156,7 @@
 
                 <View style={styles.containerReminder}>
                 {Object.keys(taskGroup).length === 0 ? (
-                    <Text style={styles.noNotesText}>Empty Notes. Make Your Notes</Text>
+                    <Text style={styles.noNotesText}>You don't have any tasks yet.</Text>
                 ) : (
                     Object.keys(taskGroup).map((time) => (
                         <View key={time}>
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     noNotesText: {
-        color: '#fff',
+        color: '#999',
         fontSize: 16,
         textAlign: 'center',
         marginTop: 20,

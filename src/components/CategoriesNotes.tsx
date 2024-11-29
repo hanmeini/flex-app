@@ -118,7 +118,7 @@ const CategoryNotes = ({ navigation }) => {
                 keyExtractor={(item) => item.id}
                 renderItem={renderTask}
                 ListEmptyComponent={
-                    <Text style={styles.emptyText}>No notes in this category.</Text>
+                    <Text style={styles.emptyText}>You don't have any tasks yet.</Text>
                 }
                 contentContainerStyle={styles.taskList}
             />
