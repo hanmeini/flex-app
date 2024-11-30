@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import * as Notifications from 'expo-notifications';
 import {
   View,
   Text,
@@ -270,7 +271,7 @@ const NotesScreen = () => {
               style={[
                 styles.filterText,
                 selectedFilter === filter && styles.activeFilterText,
-                filter === "All" && { color: "#888" }, // Tambahkan styling untuk All (opsional)
+                filter === "All" && { color: "#fff" }, // Tambahkan styling untuk All (opsional)
               ]}
             >
               {filter}
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#141d20",
-    paddingHorizontal: 15,
+    paddingHorizontal: 17,
     paddingTop: 15,
     fontFamily: "figtree-semibold",
     paddingBottom:60,
@@ -341,14 +342,15 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#141a20",
+    backgroundColor: "#1e2b30",
     borderRadius: 10,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#DADADA",
+   
   },
   activeFilterTab: {
-    backgroundColor: "#f4ab05",
+    backgroundColor: "#141a20",
+    borderWidth: 1,
+    borderColor: '#fff'
   },
   filterText: {
     color: "#fff",
@@ -378,6 +380,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginVertical: 8,
     alignItems: "center",
+    
   },
   flatlist:{
     marginBottom:60,
@@ -408,6 +411,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#fff",
+    fontFamily: "figtree-semibold"
   },
   timeCategoryContainer: {
     flexDirection: "row",
@@ -429,9 +433,11 @@ const styles = StyleSheet.create({
     color: "#fdfdfd",
     fontSize: 12,
     marginLeft: 5,
+    fontFamily: "figtree"
   },
   taskTime: {
     color: "#fff",
+    fontFamily: "figtree"
   },
   completeButton: {
     padding: 10,

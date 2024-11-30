@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+
 import {
   NavigationContainer,
   useNavigationState,
@@ -252,7 +253,7 @@ const CustomDrawerContent = ({ navigation }) => {
     return (
       <DrawerContentScrollView contentContainerStyle={styles.drawerContainer}>
         <View style={styles.header}>
-            <Text style={styles.appName}>Flexido</Text>
+            <Image source={require('./assets/images/logo.png')} style={styles.logo} />
             <TouchableOpacity onPress={() => navigation.navigate('EditProfile', { userData: user })}>
             <Image
                 source={user.photoURL ? { uri: user.photoURL } : require('./assets/images/pp-kosong.jpg')}
@@ -309,7 +310,7 @@ const CustomDrawerContent = ({ navigation }) => {
   
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#fff" />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>Logout Account</Text>
         </TouchableOpacity>
       </DrawerContentScrollView>
     );
@@ -340,61 +341,66 @@ function DrawerNavigator() {
 }
 
 export default function AppNavigator() {
-    const [isLoggedIn, setIsLoggedIn] = useState(null);
-    const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
-  
-    useEffect(() => {
-      const checkLoginStatus = async () => {
-        const loggedInStatus = await AsyncStorage.getItem('isLoggedIn');
-        const onboardingStatus = await AsyncStorage.getItem('hasSeenOnboarding');
-        setIsLoggedIn(loggedInStatus === 'true');
-        setHasSeenOnboarding(onboardingStatus === 'true');
-      };
-  
-      checkLoginStatus();
-    }, []);
-  
-    if (isLoggedIn === null) {
-      return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#0000ff" />
-        </View>
-      );
-    }
-  
+  const [isLoggedIn, setIsLoggedIn] = useState(null);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        const loggedInStatus = await AsyncStorage.getItem("isLoggedIn");
+        const onboardingStatus = await AsyncStorage.getItem("hasSeenOnboarding");
+
+        setIsLoggedIn(loggedInStatus === "true");
+        setHasSeenOnboarding(onboardingStatus === "true");
+      } catch (error) {
+        console.error("Error checking user status:", error);
+      }
+    };
+
+    checkUserStatus();
+  }, []);
+
+  if (isLoggedIn === null) {
     return (
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {/* Menampilkan Onboarding jika belum selesai */}
-          {!hasSeenOnboarding ? (
-            <Stack.Screen name="Onboarding">
-              {(props) => (
-                <OnboardingScreen
-                  {...props}
-                  onFinish={async () => {
-                    await AsyncStorage.setItem("hasSeenOnboarding", "true");
-                    setHasSeenOnboarding(true);
-                  }}
-                />
-              )}
-            </Stack.Screen>
-          ) : isLoggedIn ? (
-            // Jika pengguna sudah login, arahkan ke Home
-            <Stack.Screen name="Home" component={DrawerNavigator} />
-          ) : (
-            // Jika pengguna belum login, arahkan ke Login
-            <Stack.Screen name="Login">
-              {(props) => (
-                <LoginScreen
-                  {...props}
-                  onLoginSuccess={async () => {
-                    await AsyncStorage.setItem("isLoggedIn", "true");
-                    setIsLoggedIn(true);
-                  }}
-                />
-              )}
-            </Stack.Screen>
-          )}
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isLoggedIn ? (
+          // Jika pengguna sudah login, langsung ke Home
+          <Stack.Screen name="Home" component={DrawerNavigator} />
+        ) : !hasSeenOnboarding ? (
+          // Jika belum login dan belum selesai onboarding, tampilkan onboarding
+          <Stack.Screen name="Onboarding">
+            {(props) => (
+              <OnboardingScreen
+                {...props}
+                onFinish={async () => {
+                  await AsyncStorage.setItem("hasSeenOnboarding", "true");
+                  setHasSeenOnboarding(true);
+                }}
+              />
+            )}
+          </Stack.Screen>
+        ) : (
+          // Jika belum login tetapi sudah selesai onboarding, arahkan ke Login
+          <Stack.Screen name="Login">
+            {(props) => (
+              <LoginScreen
+                {...props}
+                onLoginSuccess={async () => {
+                  await AsyncStorage.setItem("isLoggedIn", "true");
+                  setIsLoggedIn(true);
+                }}
+              />
+            )}
+          </Stack.Screen>
+        )}
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="EditProfile" component={EditProfile} />
@@ -421,11 +427,16 @@ const styles = StyleSheet.create({
   },
   drawerContainer: {
     flex: 1,
-    backgroundColor: "#1A2529",
+    backgroundColor: "#141a20",
   },
   header: {
     alignItems: "center",
     padding: 20,
+  
+  },
+  logo: {
+    width: 40,
+    height: 40, 
   },
   appName: {
     fontSize: 24,
@@ -434,8 +445,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   profileImage: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
+    marginTop: 10,
     borderRadius: 40,
     marginBottom: 10,
     borderWidth: 2,
@@ -444,6 +456,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#fff",
+    fontFamily: "figtree-semibold"
   },
   userEmail: {
     fontSize: 14,
@@ -461,17 +474,16 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F4AB05",
+  
     margin: 20,
     paddingVertical: 10,
     borderRadius: 5,
   },
   logoutText: {
     fontSize: 16,
-    color: "#141d20",
-    marginLeft: 5,
+    color: "#fff",
+    marginLeft: 10,
+    fontFamily: "figtree-semibold"
   },
   activeItem: {
     backgroundColor: "#F4AB05",
